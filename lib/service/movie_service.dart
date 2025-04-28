@@ -6,7 +6,7 @@ import 'dart:io';
 import '../model/movie_model.dart';
 
 class MovieApiService {
-  static const String _baseUrl = 'https://api.wawunime.my.id/api/movies';
+  static const String _baseUrl = 'https://api2.wawunime.my.id/api/movies';
 
   Future<MovieResponse> getMovies({int page = 1}) async {
     final uri = Uri.parse(_baseUrl).replace(
