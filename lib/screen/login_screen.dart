@@ -1,7 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/screen/main_screen.dart';
+import 'package:flutter_application_1/service/auth_service.dart';
 import 'package:flutter_application_1/screen/register_screen.dart';
+import 'package:flutter_application_1/service/preferences_service.dart';
+import 'package:flutter_application_1/service/user_credential.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  final AuthService _authService = AuthService();
+
+  bool _isLoading = false;
+
+  void _login() async {
+  if (_emailController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Email dan password tidak boleh kosong')),
+    );
+    return;
+  }
+
+  setState(() {
+    _isLoading = true;
+  });
+
+  try {
+  final result = await _authService.login(
+    _emailController.text.trim(),
+    _passwordController.text.trim(),
+  );
+
+  // Simpan token dan credentials ke SharedPreferences
+  await PreferencesService.saveToken(result['token']);
+  final credentials = Credentials.fromJson(result['data']);
+  await PreferencesService.saveCredentials(credentials);
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text('Login berhasil')),
+  );
+
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) => MainScreen()),
+  );
+} catch (e) {
+  final errorMessage = e.toString().replaceAll('Exception: ', '');
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(errorMessage)),
+  );
+}
+ finally {
+    setState(() {
+      _isLoading = false;
+    });
+  }
+}
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -13,11 +74,10 @@ class LoginScreen extends StatelessWidget {
                 const SizedBox(height: 40),
                 // Logo
                 Image.asset(
-                  'assets/main_logo.png', // Ganti dengan path logo kamu
+                  'assets/main_logo.png',
                   height: 100,
                 ),
                 const SizedBox(height: 10),
-                // MYS Text
                 Text(
                   'MYS',
                   style: TextStyle(
@@ -26,7 +86,6 @@ class LoginScreen extends StatelessWidget {
                     letterSpacing: 2,
                   ),
                 ),
-                // Subtitle
                 Text(
                   'YOUR MOVIE & SERIES',
                   style: TextStyle(
@@ -36,7 +95,6 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 30),
-                // LOGIN title
                 Text(
                   'LOGIN',
                   style: TextStyle(
@@ -46,7 +104,6 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Form Container
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 30),
                   child: Container(
@@ -59,6 +116,7 @@ class LoginScreen extends StatelessWidget {
                       children: [
                         // Email Field
                         TextField(
+                          controller: _emailController,
                           decoration: InputDecoration(
                             labelText: 'Email',
                             hintText: 'Alex@gmail.com',
@@ -67,6 +125,7 @@ class LoginScreen extends StatelessWidget {
                         const SizedBox(height: 20),
                         // Password Field
                         TextField(
+                          controller: _passwordController,
                           obscureText: true,
                           decoration: InputDecoration(
                             labelText: 'Password',
@@ -85,11 +144,15 @@ class LoginScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            onPressed: () {},
-                            child: const Text(
-                              'Sign In',
-                              style: TextStyle(color: Colors.white),
-                            ),
+                            onPressed: _isLoading ? null : _login,
+                            child: _isLoading
+                                ? CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : const Text(
+                                    'Sign In',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -113,14 +176,12 @@ class LoginScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Dont Have An Account? "),
+                    const Text("Don't Have An Account? "),
                     TextButton(
                       onPressed: () {
-                         Navigator.push(
+                        Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => RegisterScreen(),
-                          ),
+                          MaterialPageRoute(builder: (context) => RegisterScreen()),
                         );
                       },
                       child: const Text("Sign Up"),

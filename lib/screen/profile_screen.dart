@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/screen/login_screen.dart';
+import 'package:flutter_application_1/service/preferences_service.dart';
 
 void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: ProfileScreen(),
-  ));
+  runApp(MaterialApp(debugShowCheckedModeBanner: false, home: ProfileScreen()));
 }
 
 class ProfileScreen extends StatelessWidget {
@@ -17,7 +16,16 @@ class ProfileScreen extends StatelessWidget {
         elevation: 0,
         actions: [
           TextButton.icon(
-            onPressed: () {},
+            onPressed: () async {
+              await PreferencesService.clearToken();
+              await PreferencesService.clearCredentials();
+
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+                (route) => false,
+              );
+            },
             icon: Icon(Icons.logout, color: Colors.black),
             label: Text("LogOut", style: TextStyle(color: Colors.black)),
           ),
@@ -29,17 +37,16 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 10),
             CircleAvatar(
               radius: 50,
-              backgroundImage: AssetImage('assets/avatar.png'), // Ganti path ke gambar kamu
+              backgroundImage: AssetImage(
+                'assets/avatar.png',
+              ), // Ganti path ke gambar kamu
             ),
             const SizedBox(height: 10),
             Text(
               'AlexPastoor25',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
             ),
-            Text(
-              'Alex Pastoor',
-              style: TextStyle(color: Colors.black54),
-            ),
+            Text('Alex Pastoor', style: TextStyle(color: Colors.black54)),
             const SizedBox(height: 30),
             buildMenuItem(Icons.person_outline, "Profile"),
             buildMenuItem(Icons.mail_outline, "Notification"),

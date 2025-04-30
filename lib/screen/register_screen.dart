@@ -1,7 +1,85 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/screen/login_screen.dart';
+import 'package:flutter_application_1/service/auth_service.dart'; // pastikan import AuthService kamu benar
 
-class RegisterScreen extends StatelessWidget {
+class RegisterScreen extends StatefulWidget {
+  @override
+  _RegisterScreenState createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  final AuthService _authService = AuthService();
+
+  bool _isLoading = false;
+
+  void _register() async {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    // Validasi nama
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Nama tidak boleh kosong')));
+      return;
+    }
+
+    // Validasi email format
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+    if (!emailRegex.hasMatch(email)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Email tidak valid')));
+      return;
+    }
+
+    // Validasi password
+    if (password.length < 6) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Password minimal 6 karakter')));
+      return;
+    }
+
+    final passwordRegex = RegExp(r'^(?=.*[a-zA-Z])(?=.*\d).+$');
+    if (!passwordRegex.hasMatch(password)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Password harus mengandung huruf dan angka')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await _authService.register(name, email, password);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message']+" : Silahkan Login Terlebih dahulu" ?? 'Registrasi Berhasil : Silahkan Login Terlebih dahulu')),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -12,12 +90,8 @@ class RegisterScreen extends StatelessWidget {
               children: [
                 const SizedBox(height: 40),
                 // Logo
-                Image.asset(
-                  'assets/main_logo.png', // Ganti dengan path logo kamu
-                  height: 100,
-                ),
+                Image.asset('assets/main_logo.png', height: 100),
                 const SizedBox(height: 10),
-                // MYS Text
                 Text(
                   'MYS',
                   style: TextStyle(
@@ -26,7 +100,6 @@ class RegisterScreen extends StatelessWidget {
                     letterSpacing: 2,
                   ),
                 ),
-                // Subtitle
                 Text(
                   'YOUR MOVIE & SERIES',
                   style: TextStyle(
@@ -36,7 +109,6 @@ class RegisterScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 30),
-                // LOGIN title
                 Text(
                   'REGISTER',
                   style: TextStyle(
@@ -46,7 +118,6 @@ class RegisterScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Form Container
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 30),
                   child: Container(
@@ -57,15 +128,18 @@ class RegisterScreen extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        // Email Field
+                        // Name Field
                         TextField(
+                          controller: _nameController,
                           decoration: InputDecoration(
                             labelText: 'Name',
                             hintText: 'Username',
                           ),
                         ),
                         const SizedBox(height: 20),
+                        // Email Field
                         TextField(
+                          controller: _emailController,
                           decoration: InputDecoration(
                             labelText: 'Email',
                             hintText: 'Alex@gmail.com',
@@ -74,6 +148,7 @@ class RegisterScreen extends StatelessWidget {
                         const SizedBox(height: 20),
                         // Password Field
                         TextField(
+                          controller: _passwordController,
                           obscureText: true,
                           decoration: InputDecoration(
                             labelText: 'Password',
@@ -81,7 +156,7 @@ class RegisterScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        // Sign In Button
+                        // Register Button
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
@@ -92,11 +167,16 @@ class RegisterScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            onPressed: () {},
-                            child: const Text(
-                              'Sign In',
-                              style: TextStyle(color: Colors.white),
-                            ),
+                            onPressed: _isLoading ? null : _register,
+                            child:
+                                _isLoading
+                                    ? CircularProgressIndicator(
+                                      color: Colors.white,
+                                    )
+                                    : const Text(
+                                      'Sign Up',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -116,14 +196,14 @@ class RegisterScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                // Sign Up Link
+                // Sign In Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text("Already Have An Account? "),
                     TextButton(
                       onPressed: () {
-                        Navigator.push(
+                        Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
                             builder: (context) => LoginScreen(),

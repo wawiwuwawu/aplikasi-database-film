@@ -94,76 +94,82 @@ class _MovieListScreenState extends State<MovieListScreen> {
           );
         },
       ),
-       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(builder: (context) => MovieUploadPage()),
-          );
-          
-          if (result == true) {
-            setState(() {
-              _movies.clear(); // Clear data lama
-              _currentPage = 1; // Reset ke halaman 1
-              _futureMovies = _loadMovies(); // Load data baru
-            });
-          }
-        },
-        tooltip: 'Tambah Anime Baru',
-        child: Icon(Icons.add),
-      ),
+       floatingActionButton: Padding(
+         padding: EdgeInsets.only(bottom: 80),
+         child: FloatingActionButton(
+          onPressed: () async {
+            final result = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(builder: (context) => MovieUploadPage()),
+            );
+            
+            if (result == true) {
+              setState(() {
+                _movies.clear(); // Clear data lama
+                _currentPage = 1; // Reset ke halaman 1
+                _futureMovies = _loadMovies(); // Load data baru
+              });
+            }
+          },
+          tooltip: 'Tambah Anime Baru',
+          child: Icon(Icons.add),
+               ),
+       ),
     );
   }
 
   Widget _buildMovieCard(Movie movie) {
-    return Card(
-      elevation: 4,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Image.network(
-              movie.coverUrl,
-              fit: BoxFit.cover,
+    return InkWell(
+      onTap: () {} ,
+      child: Card(
+        elevation: 4,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Image.network(
+                movie.coverUrl,
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  movie.judul,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${movie.tahunRilis} • ${movie.type}',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.star, color: Colors.amber, size: 16),
-                    const SizedBox(width: 4),
-                    Text(
-                      movie.rating,
-                      style: const TextStyle(fontSize: 12),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    movie.judul,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                  ],
-                ),
-              ],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${movie.tahunRilis} • ${movie.type}',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.star, color: Colors.amber, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        movie.rating,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

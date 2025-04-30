@@ -60,11 +60,11 @@ class _MainScreenState extends State<MainScreen> {
         showUnselectedLabels: false,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.login),
+            icon: Icon(Icons.movie),
             label: 'Movie',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: Icon(Icons.history),
             label: 'Wishlist',
           ),
           BottomNavigationBarItem(
