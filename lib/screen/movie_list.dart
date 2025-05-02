@@ -1,7 +1,9 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../service/movie_service.dart';
 import '../model/movie_model.dart';
-import 'movie_upload.dart';
+import '../screen/movie_detail.dart';
+import '../screen/upload_data.dart';
 
 class MovieListScreen extends StatefulWidget {
   const MovieListScreen({super.key});
@@ -12,124 +14,106 @@ class MovieListScreen extends StatefulWidget {
 
 class _MovieListScreenState extends State<MovieListScreen> {
   final MovieApiService _apiService = MovieApiService();
-  late Future<MovieResponse> _futureMovies;
-  int _currentPage = 1;
-  bool _hasMore = true;
+  late Future<List<Movie>> _futureMovies;
   final List<Movie> _movies = [];
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _futureMovies = _loadMovies();
+    _loadMovies();
+    _searchController.addListener(_onSearchChanged);
   }
 
-  Future<MovieResponse> _loadMovies() async {
-    final response = await _apiService.getMovies(page: _currentPage);
+  Future<void> _loadMovies() async {
     setState(() {
-      _movies.addAll(response.movies);
-      _hasMore = _currentPage < response.pagination.totalPages;
+      _futureMovies = _apiService.getMovies(query: _searchQuery);
     });
-    return response;
+    
+    final movies = await _futureMovies;
+    setState(() {
+      _movies
+        ..clear()
+        ..addAll(movies);
+    });
   }
 
-  void _loadNextPage() {
-    if (_hasMore) {
-      setState(() {
-        _currentPage++;
-        _futureMovies = _loadMovies();
-      });
-    }
+  void _onSearchChanged() {
+    _loadMovies();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daftar Anime'),
+        title: TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: 'Cari Anime...',
+            border: InputBorder.none,
+            prefixIcon: const Icon(Icons.search),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.2),
+          ),
+        ),
       ),
-      body: FutureBuilder<MovieResponse>(
-        future: _futureMovies,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Error: ${snapshot.error}'),
-                  ElevatedButton(
-                    onPressed: () => setState(() => _futureMovies = _loadMovies()),
-                    child: const Text('Coba Lagi'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return Column(
-            children: [
-              Expanded(
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(8),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.7,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: _movies.length + (_hasMore ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index >= _movies.length) {
-                      _loadNextPage();
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    return _buildMovieCard(_movies[index]);
-                  },
-                ),
-              ),
-            ],
-          );
-        },
+      body: RefreshIndicator(
+        onRefresh: _loadMovies,
+        child: GridView.builder(
+          padding: const EdgeInsets.all(8),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.7,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: _movies.length,
+          itemBuilder: (context, index) => _buildMovieCard(_movies[index]),
+        ),
       ),
-       floatingActionButton: Padding(
-         padding: EdgeInsets.only(bottom: 80),
-         child: FloatingActionButton(
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80),
+        child: FloatingActionButton(
           onPressed: () async {
             final result = await Navigator.push<bool>(
               context,
-              MaterialPageRoute(builder: (context) => MovieUploadPage()),
+              MaterialPageRoute(builder: (context) => AdminMenuPage()),
             );
             
             if (result == true) {
-              setState(() {
-                _movies.clear(); // Clear data lama
-                _currentPage = 1; // Reset ke halaman 1
-                _futureMovies = _loadMovies(); // Load data baru
-              });
+              await _loadMovies();
             }
           },
           tooltip: 'Tambah Anime Baru',
-          child: Icon(Icons.add),
-               ),
-       ),
+          child: const Icon(Icons.add),
+        ),
+      ),
     );
   }
 
   Widget _buildMovieCard(Movie movie) {
     return InkWell(
-      onTap: () {} ,
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MovieDetailScreen(movie: movie),
+          ),
+        );
+      },
       child: Card(
         elevation: 4,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: Image.network(
-                movie.coverUrl,
+              child: CachedNetworkImage(
+                imageUrl: movie.coverUrl,
                 fit: BoxFit.cover,
+                placeholder: (context, url) => 
+                  Container(color: Colors.grey[200]),
+                errorWidget: (context, url, error) => const Icon(Icons.error),
               ),
             ),
             Padding(
@@ -157,7 +141,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.star, color: Colors.amber, size: 16),
+                      const Icon(Icons.star, color: Colors.amber, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         movie.rating,

@@ -1,238 +1,247 @@
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../service/movie_service.dart';
 import '../model/movie_model.dart';
+import 'package:flutter/material.dart';
 
-class MovieUploadPage extends StatefulWidget {
-  const MovieUploadPage({super.key});
-
+class MovieFormPage extends StatefulWidget {
+  const MovieFormPage({super.key});
   @override
-  _MovieUploadPageState createState() => _MovieUploadPageState();
+  _MovieFormPageState createState() => _MovieFormPageState();
 }
 
-class _MovieUploadPageState extends State<MovieUploadPage> {
+class _MovieFormPageState extends State<MovieFormPage> {
   final _formKey = GlobalKey<FormState>();
-  final MovieApiService _apiService = MovieApiService();
-  final ImagePicker _picker = ImagePicker();
-  
-  late Movie _movie;
-  final Map<String, dynamic> _formData = {};  // store form inputs
+
+  final TextEditingController _judulController = TextEditingController();
+  final TextEditingController _sinopsisController = TextEditingController();
+  final TextEditingController _tahunController = TextEditingController();
+  final TextEditingController _typeController = TextEditingController();
+  final TextEditingController _episodeController = TextEditingController();
+  final TextEditingController _durasiController = TextEditingController();
+  final TextEditingController _ratingController = TextEditingController();
+
+  List<Genre> _allGenres = [];
+  List<Genre> _selectedGenres = [];
+
+  List<ThemeModel> _allThemes = [];
+  List<ThemeModel> _selectedThemes = [];
+
+  List<StaffForm> _staffs = [];
+  List<SeiyuForm> _seiyus = [];
+  List<CharacterForm> _karakters = [];
+
   File? _coverImage;
-  bool _isLoading = false;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
-    _movie = Movie(
-      id: 0,
-      judul: '',
-      sinopsis: '',
-      tahunRilis: 0,
-      thema: '',
-      genre: '',
-      studio: '',
-      type: '',
-      episode: 0,
-      durasi: 0,
-      rating: '',
-      coverUrl: '',
-    );
   }
 
-  Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() => _coverImage = File(pickedFile.path));
+  Future<void> _pickCover() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() => _coverImage = File(image.path));
     }
   }
 
-  Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_coverImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cover wajib dipilih')),
-      );
-      return;
+  void _submit() {
+    if (_formKey.currentState!.validate() && _coverImage != null) {
+      print('Form valid, submit data');
+    } else if (_coverImage == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Pilih cover terlebih dahulu')));
     }
-
-    _formKey.currentState!.save();  // populate _formData via onSaved
-
-    // create new Movie immutable instance
-    final movieToUpload = _movie.copyWith(
-      judul: _formData['judul'] as String,
-      sinopsis: _formData['sinopsis'] as String,
-      tahunRilis: _formData['tahunRilis'] as int,
-      thema: _formData['thema'] as String,
-      genre: _formData['genre'] as String,
-      studio: _formData['studio'] as String,
-      type: _formData['type'] as String,
-      episode: _formData['episode'] as int,
-      durasi: _formData['durasi'] as int,
-      rating: _formData['rating'] as String,
-    );
-
-    setState(() => _isLoading = true);
-    try {
-      await _apiService.uploadMovie(
-        movie: movieToUpload,
-        coverImage: _coverImage!,
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Data berhasil diupload!')),
-      );
-      Navigator.pop(context, true);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Widget _buildFormField({
-    required String label,
-    int maxLines = 1,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-    void Function(String?)? onSaved,
-  }) {
-    return TextFormField(
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-      ),
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      validator: validator,
-      onSaved: onSaved,
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tambah Anime Baru')),
+      appBar: AppBar(title: Text('Tambah Movie')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildFormField(
-                label: 'Judul',
-                validator: (v) => (v?.isEmpty ?? true) ? 'Harus diisi' : null,
-                onSaved: (v) => _formData['judul'] = v!.trim(),
+              // Judul
+              TextFormField(
+                controller: _judulController,
+                decoration: InputDecoration(labelText: 'Judul'),
+                validator: (v) => v!.isEmpty ? 'Masukkan judul' : null,
               ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                label: 'Sinopsis',
-                maxLines: 5,
-                validator: (v) => (v?.isEmpty ?? true) ? 'Harus diisi' : null,
-                onSaved: (v) => _formData['sinopsis'] = v!.trim(),
+              SizedBox(height: 12),
+              // Sinopsis
+              TextFormField(
+                controller: _sinopsisController,
+                decoration: InputDecoration(labelText: 'Sinopsis'),
+                maxLines: 3,
+                validator: (v) => v!.isEmpty ? 'Masukkan sinopsis' : null,
               ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                label: 'Tahun Rilis',
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v?.isEmpty ?? true) return 'Harus diisi';
-                  if (int.tryParse(v!) == null) return 'Harus berupa angka';
-                  return null;
-                },
-                onSaved: (v) => _formData['tahunRilis'] = int.parse(v!),
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                label: 'Thema',
-                validator: (v) => (v?.isEmpty ?? true) ? 'Harus diisi' : null,
-                onSaved: (v) => _formData['thema'] = v!.trim(),
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                label: 'Genre',
-                validator: (v) => (v?.isEmpty ?? true) ? 'Harus diisi' : null,
-                onSaved: (v) => _formData['genre'] = v!.trim(),
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                label: 'Studio',
-                validator: (v) => (v?.isEmpty ?? true) ? 'Harus diisi' : null,
-                onSaved: (v) => _formData['studio'] = v!.trim(),
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                label: 'Type',
-                validator: (v) {
-                  if (v?.isEmpty ?? true) return 'Harus diisi';
-                  const validTypes = ['TV', 'Movie', 'ONA', 'OVA'];
-                  if (!validTypes.contains(v)) return 'Type tidak valid';
-                  return null;
-                },
-                onSaved: (v) => _formData['type'] = v!,
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                label: 'Episode',
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v?.isEmpty ?? true) return 'Harus diisi';
-                  if (int.tryParse(v!) == null || int.parse(v) < 1) return 'Episode tidak valid';
-                  return null;
-                },
-                onSaved: (v) => _formData['episode'] = int.parse(v!),
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                label: 'Durasi',
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v?.isEmpty ?? true) return 'Harus diisi';
-                  if (int.tryParse(v!) == null || int.parse(v) < 1) return 'Durasi tidak valid';
-                  return null;
-                },
-                onSaved: (v) => _formData['durasi'] = int.parse(v!),
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                label: 'Rating',
-                validator: (v) {
-                  if (v?.isEmpty ?? true) return 'Harus diisi';
-                  const validRatings = ['G', 'PG', 'PG-13', 'R'];
-                  if (!validRatings.contains(v)) return 'Rating tidak valid';
-                  return null;
-                },
-                onSaved: (v) => _formData['rating'] = v!,
-              ),
-              const SizedBox(height: 20),
-              InkWell(
-                onTap: _pickImage,
-                child: Container(
-                  height: 150,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(8),
+              SizedBox(height: 12),
+              // Tahun, Type, Episode, Durasi, Rating Row
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _tahunController,
+                      decoration: InputDecoration(labelText: 'Tahun Rilis'),
+                      keyboardType: TextInputType.number,
+                      validator: (v) => v!.isEmpty ? 'Tahun?' : null,
+                    ),
                   ),
-                  child: _coverImage == null
-                      ? const Center(child: Text('Pilih Cover'))
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(_coverImage!, fit: BoxFit.cover),
-                        ),
-                ),
+                  SizedBox(width: 8),
+                  Expanded(
+                      child: DropdownButtonFormField<String>(
+                      value: _typeController.text.isEmpty ? null : _typeController.text,
+                      decoration: const InputDecoration(labelText: 'Type'),
+                      items: const ['TV', 'Movie', 'ONA', 'OVA']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                       value: value,
+                        child: Text(value),
+                      );
+                      }).toList(),
+                  onChanged: (String? newValue) {
+                  setState(() {
+                    _typeController.text = newValue ?? '';
+                  });
+                },
+                  validator: (value) => value == null || value.isEmpty ? 'Pilih Type' : null,
+                )), 
+                ],
               ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                icon: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Icon(Icons.upload),
-                label: Text(_isLoading ? 'Mengupload...' : 'Upload'),
-                onPressed: _isLoading ? null : _submitForm,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
+              SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _episodeController,
+                      decoration: InputDecoration(labelText: 'Episode'),
+                      keyboardType: TextInputType.number,
+                      validator: (v) => v!.isEmpty ? 'Episodes?' : null,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _durasiController,
+                      decoration: InputDecoration(labelText: 'Durasi (menit)'),
+                      keyboardType: TextInputType.number,
+                      validator: (v) => v!.isEmpty ? 'Durasi?' : null,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _ratingController.text.isEmpty ? null : _ratingController.text,
+                decoration: const InputDecoration(labelText: 'Rating'),
+                items: const ['G', 'PG', 'PG-13', 'R', 'NC-17']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _ratingController.text = newValue ?? '';
+                  });
+                },
+                validator: (value) => value == null || value.isEmpty ? 'Pilih Rating' : null,
+              ),
+              SizedBox(height: 16),
+              // Genre MultiSelect
+              Text('Genres'),
+              Wrap(
+                spacing: 8,
+                children: _allGenres.map((g) {
+                  final selected = _selectedGenres.contains(g);
+                  return FilterChip(
+                    label: Text(g.nama),
+                    selected: selected,
+                    onSelected: (sel) {
+                      setState(() {
+                        sel ? _selectedGenres.add(g) : _selectedGenres.remove(g);
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+              SizedBox(height: 16),
+              // Themes MultiSelect
+              Text('Themes'),
+              Wrap(
+                spacing: 8,
+                children: _allThemes.map((t) {
+                  final selected = _selectedThemes.contains(t);
+                  return FilterChip(
+                    label: Text(t.nama),
+                    selected: selected,
+                    onSelected: (sel) {
+                      setState(() {
+                        sel ? _selectedThemes.add(t) : _selectedThemes.remove(t);
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+              SizedBox(height: 16),
+              // Dynamic lists
+              Text('Staffs'),
+              ..._staffs.map((s) => s.build(context, onRemove: () {
+                    setState(() => _staffs.remove(s));
+                  })),
+              TextButton.icon(
+                onPressed: () => setState(() => _staffs.add(StaffForm())),
+                icon: Icon(Icons.add),
+                label: Text('Tambah Staff'),
+              ),
+              SizedBox(height: 16),
+              Text('Seiyus'),
+              ..._seiyus.map((s) => s.build(context, onRemove: () {
+                    setState(() => _seiyus.remove(s));
+                  })),
+              TextButton.icon(
+                onPressed: () => setState(() => _seiyus.add(SeiyuForm())),
+                icon: Icon(Icons.add),
+                label: Text('Tambah Seiyu'),
+              ),
+              SizedBox(height: 16),
+              Text('Karakters'),
+              ..._karakters.map((c) => c.build(context, onRemove: () {
+                    setState(() => _karakters.remove(c));
+                  })),
+              TextButton.icon(
+                onPressed: () => setState(() => _karakters.add(CharacterForm())),
+                icon: Icon(Icons.add),
+                label: Text('Tambah Karakter'),
+              ),
+              SizedBox(height: 16),
+              // Cover picker
+              Text('Cover Image'),
+              SizedBox(height: 8),
+              GestureDetector(
+                onTap: _pickCover,
+                child: _coverImage == null
+                    ? Container(
+                        height: 150,
+                        width: double.infinity,
+                        color: Colors.grey[300],
+                        child: Icon(Icons.add_a_photo, size: 50),
+                      )
+                    : Image.file(_coverImage!, height: 150, fit: BoxFit.cover),
+              ),
+              SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _submit,
+                  child: Text('Submit'),
                 ),
               ),
             ],
@@ -242,3 +251,87 @@ class _MovieUploadPageState extends State<MovieUploadPage> {
     );
   }
 }
+
+// Helper forms for dynamic entries
+
+class StaffForm {
+  final TextEditingController name = TextEditingController();
+  final TextEditingController role = TextEditingController();
+  Widget build(BuildContext context, {required VoidCallback onRemove}) {
+    return Card(
+      margin: EdgeInsets.symmetric(vertical: 4),
+      child: Padding(
+        padding: EdgeInsets.all(8),
+        child: Column(
+          children: [
+            TextFormField(
+              controller: name,
+              decoration: InputDecoration(labelText: 'Nama Staff'),
+            ),
+            TextFormField(
+              controller: role,
+              decoration: InputDecoration(labelText: 'Role'),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: Icon(Icons.delete),
+                onPressed: onRemove,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SeiyuForm {
+  final TextEditingController name = TextEditingController();
+  Widget build(BuildContext context, {required VoidCallback onRemove}) {
+    return Card(
+      margin: EdgeInsets.symmetric(vertical: 4),
+      child: Padding(
+        padding: EdgeInsets.all(8),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: name,
+                decoration: InputDecoration(labelText: 'Nama Seiyu'),
+              ),
+            ),
+            IconButton(icon: Icon(Icons.delete), onPressed: onRemove),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CharacterForm {
+  final TextEditingController name = TextEditingController();
+  Widget build(BuildContext context, {required VoidCallback onRemove}) {
+    return Card(
+      margin: EdgeInsets.symmetric(vertical: 4),
+      child: Padding(
+        padding: EdgeInsets.all(8),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: name,
+                decoration: InputDecoration(labelText: 'Nama Karakter'),
+              ),
+            ),
+            IconButton(icon: Icon(Icons.delete), onPressed: onRemove),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Dummy models for compile-time
+class Genre { final int id; final String nama; Genre({required this.id, required this.nama}); }
+class ThemeModel { final int id; final String nama; ThemeModel({required this.id, required this.nama}); }
