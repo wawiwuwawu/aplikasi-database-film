@@ -21,11 +21,25 @@ class _MovieListScreenState extends State<MovieListScreen> {
   String _searchQuery = '';
   Timer? _debounce;
 
+
+  String _userRole = 'customer';
+
   @override
   void initState() {
     super.initState();
     _loadMovies();
     _searchController.addListener(_onSearchChanged);
+
+    _loadUserRole();
+  }
+
+  Future<void> _loadUserRole() async {
+    final roleFromDatabase = await Future.value('admin'); // Ganti dengan logika sebenarnya
+
+    setState(() {
+      _userRole = roleFromDatabase.toLowerCase();
+      print('Role pengguna: $_userRole'); // Debugging
+    });
   }
 
   @override
@@ -99,23 +113,26 @@ class _MovieListScreenState extends State<MovieListScreen> {
           itemBuilder: (context, index) => _buildMovieCard(_movies[index]),
         ),
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80),
-        child: FloatingActionButton(
-          onPressed: () async {
-            final result = await Navigator.push<bool>(
-              context,
-              MaterialPageRoute(builder: (context) => AdminMenuPage()),
-            );
+      // Tampilkan tombol upload hanya jika role pengguna adalah Admin
+      floatingActionButton: _userRole == 'admin'
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 80),
+              child: FloatingActionButton(
+                onPressed: () async {
+                  final result = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(builder: (context) => AdminMenuPage()),
+                  );
 
-            if (result == true) {
-              await _loadMovies();
-            }
-          },
-          tooltip: 'Tambah Anime Baru',
-          child: const Icon(Icons.add),
-        ),
-      ),
+                  if (result == true) {
+                    await _loadMovies();
+                  }
+                },
+                tooltip: 'Tambah Anime Baru',
+                child: const Icon(Icons.add),
+              ),
+            )
+          : null, // Tidak menampilkan tombol jika bukan Admin
     );
   }
 

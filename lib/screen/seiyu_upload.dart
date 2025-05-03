@@ -14,7 +14,7 @@ class AddSeiyuForm extends StatefulWidget {
 
 class _AddSeiyuFormState extends State<AddSeiyuForm> {
   final _formKey = GlobalKey<FormState>();
-  final _apiService = SeiyuService();
+  final _apiService = SeiyuApiService();
   final _picker = ImagePicker();
 
   final _nameController = TextEditingController();

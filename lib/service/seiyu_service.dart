@@ -4,8 +4,69 @@ import 'dart:convert';
 import '../model/seiyu_model.dart';
 import 'dart:io';
 
-class SeiyuService {
+class SeiyuApiService {
   static const String _baseUrl = 'https://api.wawunime.my.id/api/seiyu';
+
+  Future<List<Seiyu>> getSeiyuDetail({int page = 1, String? query}) async {
+  const String baseUrl = 'https://api.wawunime.my.id/api/seiyu/detail';
+  
+  final uri = Uri.parse(baseUrl).replace(
+    queryParameters: {
+      'page': page.toString(),
+      if (query != null && query.isNotEmpty) 'search': query,
+    },
+  );
+
+  final response = await http.get(
+    uri,
+    headers: {
+      'Accept': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final jsonData = json.decode(response.body);
+    
+    if (jsonData['data'] is List) {
+      return (jsonData['data'] as List)
+          .map((seiyuJson) => Seiyu.fromJson(seiyuJson))
+          .toList();
+    } else {
+      throw Exception('Invalid API response structure');
+    }
+  } else {
+    throw Exception(
+      'Failed to load karakter: ${response.statusCode} - ${response.body}'
+    );
+  }
+}
+
+Future<Seiyu> getSeiyuDetailId(int id) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/detail/$id'),
+      headers: {'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);      
+
+      if (data['data'] is Map<String, dynamic>) {
+        return Seiyu.fromJson(data['data']);
+      } else {
+        throw Exception('Invalid response structure');
+      }
+    } else {
+      throw Exception(
+        'Failed to load karakter details. Status: ${response.statusCode}'
+      );
+    }
+  } catch (e) {
+    print('Error in getSeiyuDetailId: $e');
+    throw Exception('Failed to load data: $e');
+  }
+}
+
 
   Future<void> uploadSeiyu({
     required Seiyu seiyu,

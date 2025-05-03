@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../model/movie_model.dart';
 import 'karakter_detail_screen.dart';
+import 'seiyu_detail_screen.dart';
 
 class MovieDetailScreen extends StatefulWidget {
   final Movie movie;
@@ -21,6 +22,12 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
       appBar: AppBar(
         title: Text(movie.judul),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -41,6 +48,13 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
             _buildCharacterSection(movie.karakters),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        },
+        child: const Icon(Icons.home),
+        tooltip: 'Kembali ke Home',
       ),
     );
   }
@@ -171,16 +185,15 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
 
   Widget _buildSeiyuSection(List<Seiyu> seiyus, List<Karakter> karakters) {
     if (seiyus.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Pengisi Suara', style: _sectionTitleStyle(context)),
         const SizedBox(height: 8),
         ...seiyus.map((seiyu) {
-          final karakter = karakters.firstWhere(
-            (k) => k.id == seiyu.seiyuMovie.karakterId,
-            orElse: () => Karakter(id: 0, nama: 'Unknown', profileUrl: ''),
-          );
+          final karakterRelasi = karakters.where((k) => k.id == seiyu.seiyuMovie.karakterId).toList();
+
           return ListTile(
             leading: CircleAvatar(
               backgroundImage: seiyu.profileUrl.isNotEmpty
@@ -189,9 +202,19 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
               child: seiyu.profileUrl.isEmpty ? const Icon(Icons.person) : null,
             ),
             title: Text(seiyu.name),
-            subtitle: Text('Karakter: ${karakter.nama}'),
+            subtitle: karakterRelasi.isNotEmpty
+                ? Text('Karakter: ${karakterRelasi.first.nama}')
+                : const Text('Karakter tidak diketahui'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SeiyuDetailScreen(seiyuId: seiyu.id),
+                ),
+              );
+            },
           );
-        }),
+        }).toList(),
       ],
     );
   }

@@ -1,45 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../service/karakter_service.dart';
+import '../service/seiyu_service.dart';
 import '../service/movie_service.dart';
-import '../model/karakter_model.dart';
+import '../model/seiyu_model.dart';
 import '../model/movie_model.dart' as movie_model;
 import '../screen/movie_detail.dart';
 import '../screen/movie_list.dart';
 
-class CharacterDetailScreen extends StatefulWidget {
-  final int characterId;
-  const CharacterDetailScreen({required this.characterId, Key? key}) : super(key: key);
+class SeiyuDetailScreen extends StatefulWidget {
+  final int seiyuId;
+  const SeiyuDetailScreen({required this.seiyuId, Key? key}) : super(key: key);
 
   @override
-  _CharacterDetailScreenState createState() => _CharacterDetailScreenState();
+  _SeiyuDetailScreenState createState() => _SeiyuDetailScreenState();
 }
 
-class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
-  final KarakterService _apiService = KarakterService();
+class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
+  final SeiyuApiService _seiyuService = SeiyuApiService();
   final MovieApiService _movieService = MovieApiService();
-  late Future<Karakter> _characterFuture;
+  late Future<Seiyu> _seiyuFuture;
 
   @override
   void initState() {
     super.initState();
-    _characterFuture = _apiService.getKarakterDetailId(widget.characterId);
+    _seiyuFuture = _seiyuService.getSeiyuDetailId(widget.seiyuId);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detail Karakter'),
+        title: const Text('Detail Seiyu'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.of(context).pop();
-          },
+          }
         ),
       ),
-      body: FutureBuilder<Karakter>(
-        future: _characterFuture,
+      body: FutureBuilder<Seiyu>(
+        future: _seiyuFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -47,8 +47,8 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
-          final karakter = snapshot.data!;
-          return _buildContent(karakter);
+          final seiyu = snapshot.data!;
+          return _buildContent(seiyu);
         },
       ),
       floatingActionButton: FloatingActionButton(
@@ -61,30 +61,32 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
     );
   }
 
-  Widget _buildContent(Karakter karakter) {
+  Widget _buildContent(Seiyu seiyu) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildCharacterProfile(karakter),
+          _buildSeiyuProfile(seiyu),
           const SizedBox(height: 20),
-          _buildCharacterInfo(karakter),
+          _buildBioSection(seiyu),
           const Divider(thickness: 1.5, height: 32),
-          if (karakter.movies?.isNotEmpty == true) _buildRelatedMovies(karakter.movies!),
+          if (seiyu.karakters?.isNotEmpty == true) _buildCharacterSection(seiyu.karakters!),
+          const Divider(thickness: 1.5, height: 32),
+          if (seiyu.movies?.isNotEmpty == true) _buildMovieSection(seiyu.movies!),
         ],
       ),
     );
   }
 
-  Widget _buildCharacterProfile(Karakter karakter) {
+  Widget _buildSeiyuProfile(Seiyu seiyu) {
     return Center(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: CachedNetworkImage(
-          imageUrl: karakter.profileUrl,
-          height: 300, // Tinggi foto diubah
-          width: 200,  // Lebar foto diubah
+          imageUrl: seiyu.profileUrl ?? '',
+          width: 185,
+          height:275,
           fit: BoxFit.cover,
           placeholder: (_, __) => const Center(child: CircularProgressIndicator()),
           errorWidget: (_, __, ___) => const Icon(Icons.error, size: 50),
@@ -93,20 +95,12 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
     );
   }
 
-  Widget _buildCharacterInfo(Karakter karakter) {
+  Widget _buildBioSection(Seiyu seiyu) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          karakter.nama,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.blue[800],
-              ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Bio',
+          'Biografi',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Colors.blue[800],
@@ -114,14 +108,50 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          karakter.bio?.isNotEmpty == true ? karakter.bio! : 'Tidak ada bio',
+          seiyu.bio?.isNotEmpty == true ? seiyu.bio! : 'Tidak ada bio',
           style: const TextStyle(fontSize: 16),
         ),
       ],
     );
   }
 
-  Widget _buildRelatedMovies(List<MovieKarakter> movies) {
+  Widget _buildCharacterSection(List<KarakterSeiyu> karakters) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Karakter yang Diisi Suara',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.blue[800],
+              ),
+        ),
+        const SizedBox(height: 12),
+        ...karakters.map(_buildCharacterTile).toList(),
+      ],
+    );
+  }
+
+  Widget _buildCharacterTile(KarakterSeiyu karakter) {
+    return ListTile(
+      leading: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: CachedNetworkImage(
+          imageUrl: karakter.profileUrl ?? '',
+          width: 50,
+          height: 75,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => const CircularProgressIndicator(),
+          errorWidget: (_, __, ___) => const Icon(Icons.error),
+        ),
+      ),
+      title: Text(karakter.nama ?? 'Nama tidak tersedia'),
+      subtitle: Text(karakter.bio ?? 'Bio tidak tersedia'),
+      contentPadding: EdgeInsets.zero,
+    );
+  }
+
+  Widget _buildMovieSection(List<MovieSeiyu> movies) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -138,12 +168,12 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
     );
   }
 
-  Widget _buildMovieTile(MovieKarakter movie) {
+  Widget _buildMovieTile(MovieSeiyu movie) {
     return ListTile(
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: CachedNetworkImage(
-          imageUrl: movie.coverUrl,
+          imageUrl: movie.coverUrl ?? '',
           width: 50,
           height: 75,
           fit: BoxFit.cover,
@@ -151,8 +181,8 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
           errorWidget: (_, __, ___) => const Icon(Icons.error),
         ),
       ),
-      title: Text(movie.judul),
-      subtitle: Text('${movie.tahunRilis} • ${movie.type}'),
+      title: Text(movie.judul ?? 'Judul tidak tersedia'),
+      subtitle: Text('${movie.tahunRilis ?? 'N/A'} • ${movie.type ?? 'N/A'}'),
       contentPadding: EdgeInsets.zero,
       onTap: () => _navigateToMovieDetail(movie.id),
     );
@@ -163,7 +193,7 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
     try {
       final movie = await _movieService.getMovieDetail(movieId);
       if (!mounted) return;
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(); // Tutup loading dialog
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -172,7 +202,7 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(); // Tutup loading dialog
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Gagal memuat detail film: $e')),
       );
