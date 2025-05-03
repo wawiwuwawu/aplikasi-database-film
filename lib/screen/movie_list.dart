@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../service/movie_service.dart';
@@ -18,6 +19,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   final List<Movie> _movies = [];
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -26,11 +28,18 @@ class _MovieListScreenState extends State<MovieListScreen> {
     _searchController.addListener(_onSearchChanged);
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
   Future<void> _loadMovies() async {
     setState(() {
       _futureMovies = _apiService.getMovies(query: _searchQuery);
     });
-    
+
     final movies = await _futureMovies;
     setState(() {
       _movies
@@ -40,7 +49,13 @@ class _MovieListScreenState extends State<MovieListScreen> {
   }
 
   void _onSearchChanged() {
-    _loadMovies();
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      setState(() {
+        _searchQuery = _searchController.text.trim();
+      });
+      _loadMovies();
+    });
   }
 
   @override
@@ -53,6 +68,18 @@ class _MovieListScreenState extends State<MovieListScreen> {
             hintText: 'Cari Anime...',
             border: InputBorder.none,
             prefixIcon: const Icon(Icons.search),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      setState(() {
+                        _searchController.clear();
+                        _searchQuery = '';
+                      });
+                      _loadMovies();
+                    },
+                  )
+                : null,
             filled: true,
             fillColor: Colors.white.withOpacity(0.2),
           ),
@@ -64,7 +91,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
           padding: const EdgeInsets.all(8),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 0.7,
+            childAspectRatio: 0.6,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
           ),
@@ -80,7 +107,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
               context,
               MaterialPageRoute(builder: (context) => AdminMenuPage()),
             );
-            
+
             if (result == true) {
               await _loadMovies();
             }
@@ -108,12 +135,14 @@ class _MovieListScreenState extends State<MovieListScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: CachedNetworkImage(
-                imageUrl: movie.coverUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => 
-                  Container(color: Colors.grey[200]),
-                errorWidget: (context, url, error) => const Icon(Icons.error),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: CachedNetworkImage(
+                  imageUrl: movie.coverUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(color: Colors.grey[200]),
+                  errorWidget: (context, url, error) => const Icon(Icons.error),
+                ),
               ),
             ),
             Padding(

@@ -47,7 +47,7 @@ class MovieApiService {
     
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return Movie.fromJson(data['data'][0]);
+      return Movie.fromJson(data['data']);
     } else {
       throw Exception('Failed to load movie details');
     }

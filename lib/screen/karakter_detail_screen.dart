@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../service/karakter_service.dart';
 import '../model/karakter_model.dart';
+import '../model/movie_model.dart' as movie_model;
+import '../service/movie_service.dart';
+import '../screen/movie_detail.dart';
 
 class CharacterDetailScreen extends StatefulWidget {
   final int characterId;
-
   const CharacterDetailScreen({required this.characterId, Key? key}) : super(key: key);
 
   @override
@@ -14,6 +16,7 @@ class CharacterDetailScreen extends StatefulWidget {
 
 class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
   final KarakterService _apiService = KarakterService();
+  final MovieApiService _movieService = MovieApiService();
   late Future<Karakter> _characterFuture;
 
   @override
@@ -36,20 +39,24 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
           final karakter = snapshot.data!;
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildCharacterProfile(karakter),
-                const SizedBox(height: 20),
-                _buildCharacterInfo(karakter),
-                const Divider(thickness: 1.5, height: 32),
-                _buildRelationsSection(karakter),
-              ],
-            ),
-          );
+          return _buildContent(karakter);
         },
+      ),
+    );
+  }
+
+  Widget _buildContent(Karakter karakter) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCharacterProfile(karakter),
+          const SizedBox(height: 20),
+          _buildCharacterInfo(karakter),
+          const Divider(thickness: 1.5, height: 32),
+          if (karakter.movies?.isNotEmpty == true) _buildRelatedMovies(karakter.movies!),
+        ],
       ),
     );
   }
@@ -63,8 +70,8 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
           height: 250,
           width: 175,
           fit: BoxFit.cover,
-          placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-          errorWidget: (context, url, error) => const Icon(Icons.error, size: 50),
+          placeholder: (_, __) => const Center(child: CircularProgressIndicator()),
+          errorWidget: (_, __, ___) => const Icon(Icons.error, size: 50),
         ),
       ),
     );
@@ -98,53 +105,20 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
     );
   }
 
-  Widget _buildRelationsSection(Karakter karakter) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (karakter.seiyus?.isNotEmpty == true)
-          _buildSection(
-            title: 'Pengisi Suara',
-            children: karakter.seiyus!.map(_buildSeiyuTile).toList(),
-          ),
-        if (karakter.movies?.isNotEmpty == true)
-          _buildSection(
-            title: 'Film Terkait',
-            children: karakter.movies!.map(_buildMovieTile).toList(),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildSection({required String title, required List<Widget> children}) {
+  Widget _buildRelatedMovies(List<MovieKarakter> movies) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title,
+          'Film Terkait',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Colors.blue[800],
               ),
         ),
         const SizedBox(height: 12),
-        ...children,
-        const SizedBox(height: 20),
+        ...movies.map(_buildMovieTile).toList(),
       ],
-    );
-  }
-
-  Widget _buildSeiyuTile(SeiyuKarakter seiyu) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundImage: seiyu.profileUrl.isNotEmpty
-            ? CachedNetworkImageProvider(seiyu.profileUrl)
-            : null,
-        child: seiyu.profileUrl.isEmpty ? const Icon(Icons.person) : null,
-      ),
-      title: Text(seiyu.name),
-      subtitle: Text(seiyu.bio),
-      contentPadding: EdgeInsets.zero,
     );
   }
 
@@ -157,14 +131,43 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
           width: 50,
           height: 75,
           fit: BoxFit.cover,
+          placeholder: (_, __) => const CircularProgressIndicator(),
+          errorWidget: (_, __, ___) => const Icon(Icons.error),
         ),
       ),
       title: Text(movie.judul),
       subtitle: Text('${movie.tahunRilis} • ${movie.type}'),
       contentPadding: EdgeInsets.zero,
-      onTap: () {
-        // Navigasi ke detail film jika diperlukan
-      },
+      onTap: () => _navigateToMovieDetail(movie.id),
+    );
+  }
+
+  Future<void> _navigateToMovieDetail(int movieId) async {
+    _showLoadingDialog();
+    try {
+      final movie = await _movieService.getMovieDetail(movieId);
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Tutup loading dialog
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MovieDetailScreen(movie: movie),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Tutup loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memuat detail film: $e')),
+      );
+    }
+  }
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
   }
 }

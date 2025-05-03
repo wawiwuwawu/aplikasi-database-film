@@ -15,13 +15,6 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   bool _isSynopsisExpanded = false;
 
   @override
-  void initState() {
-    super.initState();
-    // Debug: print raw JSON and parsed model
-    debugPrint('RAW MOVIE JSON: \${widget.movie.toJson()}');
-  }
-
-  @override
   Widget build(BuildContext context) {
     final movie = widget.movie;
     return Scaffold(
@@ -38,8 +31,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
             const SizedBox(height: 20),
             _buildBasicInfoSection(movie),
             _buildSectionDivider(),
-            _buildListSection<Genre>('Genres', movie.genres, (g) => g.nama),
-            _buildListSection<ThemeMovie>('Themes', movie.themes, (t) => t.nama),
+            _buildListSection('Genres', movie.genres, (g) => g.nama),
+            _buildListSection('Themes', movie.themes, (t) => t.nama),
             _buildSectionDivider(),
             _buildStaffSection(movie.staffs),
             _buildSectionDivider(),
@@ -52,59 +45,38 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     );
   }
 
-  TextStyle _sectionTitleStyle(BuildContext context) {
-    final base = Theme.of(context).textTheme.titleLarge;
-    return base?.copyWith(fontWeight: FontWeight.bold, color: Colors.blue[800])
-        ?? const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue);
-  }
-
   Widget _buildCoverImage(String url) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: CachedNetworkImage(
         imageUrl: url,
-        height: 275,
-        width: 175,
+        width: 200, // Lebar penuh layar
         fit: BoxFit.cover,
-        placeholder: (c, u) => Container(
-          height: 275,
-          color: Colors.grey[175],
-          child: const Center(child: CircularProgressIndicator()),
-        ),
-        errorWidget: (c, u, e) => Container(
-          height: 275,
-          color: Colors.grey[175],
-          child: const Icon(Icons.error),
-        ),
+        placeholder: (context, url) => _buildPlaceholder(),
+        errorWidget: (context, url, error) => _buildErrorWidget(),
       ),
     );
   }
 
   Widget _buildPlaceholder() => Container(
-  height: 300,
-  decoration: BoxDecoration(
-    color: Colors.grey[200],
-    borderRadius: BorderRadius.circular(12),
-  ),
-  child: Center(child: CircularProgressIndicator(color: Colors.blue[800])),
-);
+        width: 200,
+        height: 200,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Center(child: CircularProgressIndicator()),
+      );
 
-Widget _buildErrorWidget() => Container(
-  height: 300,
-  decoration: BoxDecoration(
-    color: Colors.grey[200],
-    borderRadius: BorderRadius.circular(12),
-  ),
-  child: Column(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      Icon(Icons.error_outline, color: Colors.red[400], size: 40),
-      const SizedBox(height: 8),
-      Text('Gagal memuat gambar', style: TextStyle(color: Colors.red[400])),
-    ],
-  ),
-);
-
+  Widget _buildErrorWidget() => Container(
+        width: 200,
+        height: 200,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.error, size: 40, color: Colors.red),
+      );
 
   Widget _buildBasicInfoSection(Movie movie) {
     return Column(
@@ -122,152 +94,110 @@ Widget _buildErrorWidget() => Container(
         const SizedBox(height: 16),
         Text('Sinopsis', style: _sectionTitleStyle(context)),
         const SizedBox(height: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              movie.sinopsis.isNotEmpty ? movie.sinopsis : 'Tidak ada sinopsis',
-              maxLines: _isSynopsisExpanded ? null : 4,
-              overflow: _isSynopsisExpanded
-                  ? TextOverflow.visible
-                  : TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 16,
-                height: 1.5,
+        Text(
+          movie.sinopsis.isNotEmpty ? movie.sinopsis : 'Tidak ada sinopsis',
+          maxLines: _isSynopsisExpanded ? null : 4,
+          overflow: _isSynopsisExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 16, height: 1.5),
+        ),
+        if (movie.sinopsis.isNotEmpty)
+          GestureDetector(
+            onTap: () => setState(() => _isSynopsisExpanded = !_isSynopsisExpanded),
+            child: Text(
+              _isSynopsisExpanded ? 'Lebih Sedikit' : 'Baca Selengkapnya',
+              style: TextStyle(
+                color: Theme.of(context).primaryColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
             ),
-            if (movie.sinopsis.isNotEmpty)
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isSynopsisExpanded = !_isSynopsisExpanded;
-                  });
-                },
-                child: Text(
-                  _isSynopsisExpanded ? 'Lebih Sedikit' : 'Baca Selengkapnya',
-                  style: TextStyle(
-                    color: Theme.of(context).primaryColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-          ],
+          ),
+      ],
+    );
+  }
+
+  Widget _buildInfoChip(IconData icon, String label) {
+    return Chip(
+      avatar: Icon(icon, size: 18),
+      label: Text(label),
+      backgroundColor: Colors.blue[50],
+    );
+  }
+
+  Widget _buildSectionDivider() => const Divider(thickness: 1.5, height: 32);
+
+  Widget _buildListSection<T>(String title, List<T> items, String Function(T) nameBuilder) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: _sectionTitleStyle(context)),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: items.map((item) {
+            final name = nameBuilder(item);
+            return Chip(
+              label: Text(name, overflow: TextOverflow.ellipsis),
+              backgroundColor: Colors.grey[200],
+            );
+          }).toList(),
         ),
       ],
     );
   }
 
-Widget _buildInfoChip(IconData icon, String label) => AnimatedContainer(
-  duration: const Duration(milliseconds: 300),
-  curve: Curves.easeInOut,
-  child: InkWell(
-    onTap: () {},
-    borderRadius: BorderRadius.circular(20),
-    child: Chip(
-      avatar: Icon(icon, size: 18),
-      label: Text(label),
-      backgroundColor: Colors.blue[50],
-      visualDensity: VisualDensity.compact,
-    ),
-  ),
-);
-
-  Widget _buildSectionDivider() => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 16),
-        child: Divider(thickness: 1.5),
-      );
-
-Widget _buildListSection<T>(String title, List<T> items, String Function(T) nameBuilder) {
-  if (items.isEmpty) return const SizedBox.shrink();
-  return Column(
-    children: [
-      if (title.isNotEmpty) ...[
-        Text(title, style: _sectionTitleStyle(context)),
-        const SizedBox(height: 12),
-      ],
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: items.map((e) {
-          final name = nameBuilder(e);
-          return Tooltip(
-            message: name,
-            child: Chip(
-              label: Text(
-                name,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-              backgroundColor: Colors.grey[200],
-            ),
-          );
-        }).toList(),
-      ),
-    ],
-  );
-}
-
   Widget _buildStaffSection(List<Staff> staffs) {
-    debugPrint('Staffs count: ${staffs.length}');
     if (staffs.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Staff Produksi', style: _sectionTitleStyle(context)),
         const SizedBox(height: 8),
-        ...staffs.map((s) => ListTile(
+        ...staffs.map((staff) => ListTile(
               leading: CircleAvatar(
-                backgroundImage: s.profileUrl.isNotEmpty
-                    ? CachedNetworkImageProvider(s.profileUrl)
+                backgroundImage: staff.profileUrl.isNotEmpty
+                    ? CachedNetworkImageProvider(staff.profileUrl)
                     : null,
-                child: s.profileUrl.isEmpty ? const Icon(Icons.person) : null,
+                child: staff.profileUrl.isEmpty ? const Icon(Icons.person) : null,
               ),
-              title: Text(s.name),
-              subtitle: Text(s.role),
-              contentPadding: EdgeInsets.zero,
+              title: Text(staff.name),
+              subtitle: Text(staff.role),
             )),
       ],
     );
   }
 
-  Widget _buildSeiyuSection(List<Seiyu> seiyus, List<Karakter> allChars) {
-    debugPrint('Seiyus count: ${seiyus.length}');
+  Widget _buildSeiyuSection(List<Seiyu> seiyus, List<Karakter> karakters) {
     if (seiyus.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Pengisi Suara', style: _sectionTitleStyle(context)),
         const SizedBox(height: 8),
-        ...seiyus.map((s) {
-          final mainChar = allChars.firstWhere(
-            (k) => k.id == s.seiyuMovie.karakterId,
+        ...seiyus.map((seiyu) {
+          final karakter = karakters.firstWhere(
+            (k) => k.id == seiyu.seiyuMovie.karakterId,
             orElse: () => Karakter(id: 0, nama: 'Unknown', profileUrl: ''),
           );
-          return Column(
-            children: [
-              ListTile(
-                leading: CircleAvatar(
-                  backgroundImage: s.profileUrl.isNotEmpty
-                      ? CachedNetworkImageProvider(s.profileUrl)
-                      : null,
-                  child: s.profileUrl.isEmpty ? const Icon(Icons.person) : null,
-                ),
-                title: Text(s.name),
-                subtitle: Text('Karakter: ${mainChar.nama}'),
-                contentPadding: EdgeInsets.zero,
-              ),
-              const Divider(height: 1),
-            ],
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundImage: seiyu.profileUrl.isNotEmpty
+                  ? CachedNetworkImageProvider(seiyu.profileUrl)
+                  : null,
+              child: seiyu.profileUrl.isEmpty ? const Icon(Icons.person) : null,
+            ),
+            title: Text(seiyu.name),
+            subtitle: Text('Karakter: ${karakter.nama}'),
           );
-        }).toList(),
+        }),
       ],
     );
   }
 
-  Widget _buildCharacterSection(List<Karakter> chars) {
-    debugPrint('Karakters count: ${chars.length}');
-    if (chars.isEmpty) return const SizedBox.shrink();
+  Widget _buildCharacterSection(List<Karakter> karakters) {
+    if (karakters.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -282,38 +212,32 @@ Widget _buildListSection<T>(String title, List<T> items, String Function(T) name
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
           ),
-          itemCount: chars.length,
-          itemBuilder: (c, i) {
-            final k = chars[i];
+          itemCount: karakters.length,
+          itemBuilder: (context, index) {
+            final karakter = karakters[index];
             return GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CharacterDetailScreen(characterId: k.id),
-                  ),
-                );
-              },
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CharacterDetailScreen(characterId: karakter.id),
+                ),
+              ),
               child: Column(
                 children: [
                   Expanded(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: CachedNetworkImage(
-                        imageUrl: k.profileUrl,
+                        imageUrl: karakter.profileUrl,
                         fit: BoxFit.cover,
-                        width: double.infinity,
-                        placeholder: (c, u) => Container(color: Colors.grey[200]),
-                        errorWidget: (c, u, e) => Container(
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.error),
-                        ),
+                        placeholder: (context, url) => Container(color: Colors.grey[200]),
+                        errorWidget: (context, url, error) => const Icon(Icons.error),
                       ),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    k.nama,
+                    karakter.nama,
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -326,5 +250,13 @@ Widget _buildListSection<T>(String title, List<T> items, String Function(T) name
         ),
       ],
     );
+  }
+
+  TextStyle _sectionTitleStyle(BuildContext context) {
+    return Theme.of(context).textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: Colors.blue[800],
+        ) ??
+        const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue);
   }
 }
