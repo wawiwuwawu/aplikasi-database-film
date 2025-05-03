@@ -7,7 +7,7 @@ import 'dart:io';
 class KarakterService {
   static const String _baseUrl = 'https://api.wawunime.my.id/api/karakter';
 
-  Future<List<Karakter>> getKarakter({int page = 1, String? query}) async {
+  Future<List<Karakter>> getKarakterDetail({int page = 1, String? query}) async {
   const String baseUrl = 'https://api.wawunime.my.id/api/karakter/detail';
   
   final uri = Uri.parse(baseUrl).replace(
@@ -41,6 +41,32 @@ class KarakterService {
   }
 }
 
+
+Future<Karakter> getKarakterDetailId(int id) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/detail/$id'),
+      headers: {'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);      
+
+      if (data['data'] is Map<String, dynamic>) {
+        return Karakter.fromJson(data['data']);
+      } else {
+        throw Exception('Invalid response structure');
+      }
+    } else {
+      throw Exception(
+        'Failed to load karakter details. Status: ${response.statusCode}'
+      );
+    }
+  } catch (e) {
+    print('Error in getKarakterDetailId: $e');
+    throw Exception('Failed to load data: $e');
+  }
+}
 
 
   Future<void> uploadKarakter({

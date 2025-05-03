@@ -22,14 +22,12 @@ class MovieApiService {
     uri,
     headers: {
       'Accept': 'application/json',
-      // Tambahkan header lain jika diperlukan (e.g., Authorization)
     },
   );
 
   if (response.statusCode == 200) {
     final jsonData = json.decode(response.body);
     
-    // Pastikan struktur response sesuai
     if (jsonData['data'] is List) {
       return (jsonData['data'] as List)
           .map((movieJson) => Movie.fromJson(movieJson))

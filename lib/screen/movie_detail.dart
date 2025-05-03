@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../model/movie_model.dart';
+import 'karakter_detail_screen.dart';
 
 class MovieDetailScreen extends StatefulWidget {
   final Movie movie;
@@ -284,32 +285,42 @@ Widget _buildListSection<T>(String title, List<T> items, String Function(T) name
           itemCount: chars.length,
           itemBuilder: (c, i) {
             final k = chars[i];
-            return Column(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
-                      imageUrl: k.profileUrl,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      placeholder: (c, u) => Container(color: Colors.grey[200]),
-                      errorWidget: (c, u, e) => Container(
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.error),
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CharacterDetailScreen(characterId: k.id),
+                  ),
+                );
+              },
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: CachedNetworkImage(
+                        imageUrl: k.profileUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        placeholder: (c, u) => Container(color: Colors.grey[200]),
+                        errorWidget: (c, u, e) => Container(
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.error),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  k.nama,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    k.nama,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
             );
           },
         ),

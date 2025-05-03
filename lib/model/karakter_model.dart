@@ -29,20 +29,20 @@ class Karakter {
     );
   }
 
-  factory Karakter.fromJson(Map<String, dynamic> json) {
-    return Karakter(
-      id: json['id'],
-      nama: json['nama'],
-      bio: json['bio'],
-      profileUrl: json['profile_url'],
-      seiyus: (json['seiyus'] as List)
-          .map((s) => SeiyuKarakter.fromJson(s))
-          .toList(),
-      movies: (json['movies'] as List)
-          .map((m) => MovieKarakter.fromJson(m))
-          .toList(),
-    );
-  }
+factory Karakter.fromJson(Map<String, dynamic> json) {
+  return Karakter(
+    id: json['id'] ?? 0,
+    nama: json['nama'] ?? 'Nama tidak tersedia',
+    bio: json['bio'],
+    profileUrl: json['profile_url'] ?? '',
+    seiyus: (json['seiyus'] as List<dynamic>?)
+        ?.map((s) => SeiyuKarakter.fromJson(s))
+        .toList() ?? [],
+    movies: (json['movies'] as List<dynamic>?)
+        ?.map((m) => MovieKarakter.fromJson(m))
+        .toList() ?? [],
+  );
+}
 }
 
 class SeiyuKarakter {
