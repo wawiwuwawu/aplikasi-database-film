@@ -1,21 +1,41 @@
 class Staff {
   final int id;
   final String name;
-  final String birthday;
+  final String? birthday;
   final String role;
-  final String bio;
+  final String? bio;
   final String profileUrl;
-  final List<MovieStaff> movies;
+  final List<MovieStaff>? movies;
 
   Staff({
     required this.id,
     required this.name,
-    required this.birthday,
+    this.birthday,
     required this.role,
-    required this.bio,
+    this.bio,
     required this.profileUrl,
-    required this.movies,
+    this.movies,
   });
+
+  Staff copyWith({
+    int? id,
+    String? name,
+    String? birthday,
+    String? role,
+    String? bio,
+    String? profileUrl,
+    List<MovieStaff>? movies,
+  }) {
+    return Staff(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      birthday: birthday ?? this.birthday,
+      role: role ?? this.role,
+      bio: bio ?? this.bio,
+      profileUrl: profileUrl ?? this.profileUrl,
+      movies: movies ?? this.movies,
+    );
+  }
 
   factory Staff.fromJson(Map<String, dynamic> json) {
     return Staff(

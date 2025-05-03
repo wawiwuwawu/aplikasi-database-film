@@ -1,29 +1,53 @@
 class Seiyu {
   final int id;
   final String name;
-  final String birthday;
-  final String bio;
-  final String websiteUrl;
-  final String instagramUrl;
-  final String twitterUrl;
-  final String youtubeUrl;
-  final String profileUrl;
-  final List<KarakterSeiyu> karakters;
-  final List<MovieSeiyu> movies;
+  final String? birthday;
+  final String? bio;
+  final String? websiteUrl;
+  final String? instagramUrl;
+  final String? twitterUrl;
+  final String? youtubeUrl;
+  final String? profileUrl;
+  final List<KarakterSeiyu>? karakters;
+  final List<MovieSeiyu>? movies;
 
   Seiyu({
     required this.id,
     required this.name,
-    required this.birthday,
-    required this.bio,
-    required this.websiteUrl,
-    required this.instagramUrl,
-    required this.twitterUrl,
-    required this.youtubeUrl,
-    required this.profileUrl,
-    required this.karakters,
-    required this.movies,
+    this.birthday,
+    this.bio,
+    this.websiteUrl,
+    this.instagramUrl,
+    this.twitterUrl,
+    this.youtubeUrl,
+    this.profileUrl,
+    this.karakters,
+    this.movies,
   });
+
+  Seiyu copyWith({
+    int? id,
+    String? name,
+    String? birthday,
+    String? bio,
+    String? websiteUrl,
+    String? instagramUrl,
+    String? twitterUrl,
+    String? youtubeUrl,
+    String? profileUrl,
+  }) {
+    return Seiyu(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      birthday: birthday ?? this.birthday,
+      bio: bio ?? this.bio,
+      websiteUrl: websiteUrl ?? this.websiteUrl,
+      instagramUrl: instagramUrl ?? this.instagramUrl,
+      twitterUrl: twitterUrl ?? this.twitterUrl,
+      youtubeUrl: youtubeUrl ?? this.youtubeUrl,
+      profileUrl: profileUrl ?? this.profileUrl,
+    );
+  }
 
   factory Seiyu.fromJson(Map<String, dynamic> json) {
     return Seiyu(

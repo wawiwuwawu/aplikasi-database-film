@@ -3,17 +3,31 @@ class Karakter {
   final String nama;
   final String? bio;
   final String profileUrl;
-  final List<SeiyuKarakter> seiyus;
-  final List<MovieKarakter> movies;
+  final List<SeiyuKarakter>? seiyus;
+  final List<MovieKarakter>? movies;
 
   Karakter({
     required this.id,
     required this.nama,
     this.bio,
     required this.profileUrl,
-    required this.seiyus,
-    required this.movies,
+    this.seiyus,
+    this.movies,
   });
+
+  Karakter copyWith({
+    int? id,
+    String? nama,
+    String? bio,
+    String? profileUrl,
+  }) {
+    return Karakter(
+      id: id ?? this.id,
+      nama: nama ?? this.nama,
+      bio: bio ?? this.bio,
+      profileUrl: profileUrl ?? this.profileUrl,
+    );
+  }
 
   factory Karakter.fromJson(Map<String, dynamic> json) {
     return Karakter(

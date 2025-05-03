@@ -1,12 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/screen/login_screen.dart';
 import 'package:flutter_application_1/service/preferences_service.dart';
+import 'package:flutter_application_1/service/user_credential.dart';
 
-void main() {
-  runApp(MaterialApp(debugShowCheckedModeBanner: false, home: ProfileScreen()));
+
+class ProfileScreen extends StatefulWidget {
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class ProfileScreen extends StatelessWidget {
+class _ProfileScreenState extends State<ProfileScreen> {
+  String name = "";
+  String email = "";
+
+
+@override
+void initState() {
+  super.initState();
+_getUserData();
+}
+
+ Future<void> _getUserData() async {
+    Credentials credentials = PreferencesService.getCredentials()!;
+     name = credentials.name;
+     email = credentials.email;    
+    await Future.delayed(const Duration(seconds: 1)); // opsional delay agar transisi smooth
+
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,10 +64,10 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'AlexPastoor25',
+              name,
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
             ),
-            Text('Alex Pastoor', style: TextStyle(color: Colors.black54)),
+            Text(email, style: TextStyle(color: Colors.black54)),
             const SizedBox(height: 30),
             buildMenuItem(Icons.person_outline, "Profile"),
             buildMenuItem(Icons.mail_outline, "Notification"),

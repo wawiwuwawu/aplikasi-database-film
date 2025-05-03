@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:numberpicker/numberpicker.dart';
 import '../service/movie_service.dart';
 import '../model/movie_model.dart';
-import 'package:flutter/material.dart';
 
 class MovieFormPage extends StatefulWidget {
   const MovieFormPage({super.key});
@@ -13,6 +13,9 @@ class MovieFormPage extends StatefulWidget {
 
 class _MovieFormPageState extends State<MovieFormPage> {
   final _formKey = GlobalKey<FormState>();
+  int _selectedYear = DateTime.now().year;
+  int _selectedDuration = 20;
+  int _selectedEpisode = 12;
 
   final TextEditingController _judulController = TextEditingController();
   final TextEditingController _sinopsisController = TextEditingController();
@@ -51,10 +54,100 @@ class _MovieFormPageState extends State<MovieFormPage> {
     if (_formKey.currentState!.validate() && _coverImage != null) {
       print('Form valid, submit data');
     } else if (_coverImage == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Pilih cover terlebih dahulu')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Pilih cover terlebih dahulu')));
     }
   }
+
+  Future<void> _pickYear() {
+  return showModalBottomSheet(
+    context: context,
+    builder: (_) {
+      // Tahun minimal & maksimal yang ingin ditampilkan
+      final firstYear = 1900;
+      final lastYear = DateTime.now().year + 5; // misal sampai 5 tahun ke depan
+
+      return SizedBox(
+        height: 300,
+        child: YearPicker(
+          firstDate: DateTime(firstYear),
+          lastDate: DateTime(lastYear),
+          initialDate: DateTime(_selectedYear),
+          selectedDate: DateTime(_selectedYear),
+          onChanged: (DateTime dateTime) {
+            // Simpan dan tutup modal
+            setState(() => _selectedYear = dateTime.year);
+            Navigator.pop(context);
+          },
+        ),
+      );
+    },
+  );
+}
+
+Future<void> _showNumberPicker({
+  required String title,
+  required int initialValue,
+  required ValueChanged<int> onConfirm,
+  int min = 1,
+  int max = 500,
+}) {
+  return showModalBottomSheet(
+    context: context,
+    builder: (_) {
+      int temp = initialValue;
+      
+      return StatefulBuilder(
+        builder: (context, setModalState) {
+          return SizedBox(
+            height: 250,
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Text(title, style: const TextStyle(fontSize: 16)),
+                Expanded(
+                  child: Center(
+                    child: FractionallySizedBox(
+                      widthFactor: 0.7,
+                      child: NumberPicker(
+                        value: temp,
+                        minValue: min,
+                        maxValue: max,
+                        onChanged: (v) => setModalState(() => temp = v),
+                        infiniteLoop: true,
+                      ),                       
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    onConfirm(temp);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+Future<void> _pickDuration() => _showNumberPicker(
+  title: 'Durasi (menit)',
+  initialValue: _selectedDuration,
+  onConfirm: (value) => setState(() => _selectedDuration = value),
+);
+
+// Untuk episode
+Future<void> _pickEpisode() => _showNumberPicker(
+  title: 'Episode (angka)',
+  initialValue: _selectedEpisode,
+  onConfirm: (value) => setState(() => _selectedEpisode = value),
+);
 
   @override
   Widget build(BuildContext context) {
@@ -82,144 +175,223 @@ class _MovieFormPageState extends State<MovieFormPage> {
                 validator: (v) => v!.isEmpty ? 'Masukkan sinopsis' : null,
               ),
               SizedBox(height: 12),
-              // Tahun, Type, Episode, Durasi, Rating Row
               Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
-                      controller: _tahunController,
-                      decoration: InputDecoration(labelText: 'Tahun Rilis'),
-                      keyboardType: TextInputType.number,
-                      validator: (v) => v!.isEmpty ? 'Tahun?' : null,
+                    child: InkWell(
+                      onTap: _pickYear,
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Tahun Rilis',
+                          border: OutlineInputBorder(),
+                        ),
+                        child: Text('$_selectedYear'),
+                      ),
                     ),
                   ),
                   SizedBox(width: 8),
                   Expanded(
-                      child: DropdownButtonFormField<String>(
-                      value: _typeController.text.isEmpty ? null : _typeController.text,
+                    child: DropdownButtonFormField<String>(
+                      value:
+                          _typeController.text.isEmpty
+                              ? null
+                              : _typeController.text,
                       decoration: const InputDecoration(labelText: 'Type'),
-                      items: const ['TV', 'Movie', 'ONA', 'OVA']
-                        .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                       value: value,
-                        child: Text(value),
-                      );
-                      }).toList(),
-                  onChanged: (String? newValue) {
-                  setState(() {
-                    _typeController.text = newValue ?? '';
-                  });
-                },
-                  validator: (value) => value == null || value.isEmpty ? 'Pilih Type' : null,
-                )), 
+                      items:
+                          const [
+                            'TV',
+                            'Movie',
+                            'ONA',
+                            'OVA',
+                          ].map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _typeController.text = newValue ?? '';
+                        });
+                      },
+                      validator:
+                          (value) =>
+                              value == null || value.isEmpty
+                                  ? 'Pilih Type'
+                                  : null,
+                    ),
+                  ),
                 ],
               ),
               SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
-                      controller: _episodeController,
-                      decoration: InputDecoration(labelText: 'Episode'),
-                      keyboardType: TextInputType.number,
-                      validator: (v) => v!.isEmpty ? 'Episodes?' : null,
+                    child: InkWell(
+                      onTap: _pickEpisode,
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Episode',
+                          border: OutlineInputBorder(),
+                        ),
+                        child: Text('$_selectedEpisode'),
+                      ),
                     ),
                   ),
                   SizedBox(width: 8),
                   Expanded(
-                    child: TextFormField(
-                      controller: _durasiController,
-                      decoration: InputDecoration(labelText: 'Durasi (menit)'),
-                      keyboardType: TextInputType.number,
-                      validator: (v) => v!.isEmpty ? 'Durasi?' : null,
+                    child: InkWell(
+                      onTap: _pickDuration,
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Durasi',
+                          border: OutlineInputBorder(),
+                        ),
+                        child: Text('$_selectedDuration'),
+                      ),
                     ),
                   ),
                 ],
               ),
               SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _ratingController.text.isEmpty ? null : _ratingController.text,
+                value:
+                    _ratingController.text.isEmpty
+                        ? null
+                        : _ratingController.text,
                 decoration: const InputDecoration(labelText: 'Rating'),
-                items: const ['G', 'PG', 'PG-13', 'R', 'NC-17']
-                    .map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
+                items:
+                    const [
+                      'G',
+                      'PG',
+                      'PG-13',
+                      'R',
+                      'NC-17',
+                    ].map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
                 onChanged: (String? newValue) {
                   setState(() {
                     _ratingController.text = newValue ?? '';
                   });
                 },
-                validator: (value) => value == null || value.isEmpty ? 'Pilih Rating' : null,
+                validator:
+                    (value) =>
+                        value == null || value.isEmpty ? 'Pilih Rating' : null,
               ),
               SizedBox(height: 16),
               // Genre MultiSelect
               Text('Genres'),
               Wrap(
                 spacing: 8,
-                children: _allGenres.map((g) {
-                  final selected = _selectedGenres.contains(g);
-                  return FilterChip(
-                    label: Text(g.nama),
-                    selected: selected,
-                    onSelected: (sel) {
-                      setState(() {
-                        sel ? _selectedGenres.add(g) : _selectedGenres.remove(g);
-                      });
-                    },
-                  );
-                }).toList(),
+                children:
+                    _allGenres.map((g) {
+                      final selected = _selectedGenres.contains(g);
+                      return FilterChip(
+                        label: Text(g.nama),
+                        selected: selected,
+                        onSelected: (sel) {
+                          setState(() {
+                            sel
+                                ? _selectedGenres.add(g)
+                                : _selectedGenres.remove(g);
+                          });
+                        },
+                      );
+                    }).toList(),
               ),
               SizedBox(height: 16),
               // Themes MultiSelect
               Text('Themes'),
               Wrap(
                 spacing: 8,
-                children: _allThemes.map((t) {
-                  final selected = _selectedThemes.contains(t);
-                  return FilterChip(
-                    label: Text(t.nama),
-                    selected: selected,
-                    onSelected: (sel) {
-                      setState(() {
-                        sel ? _selectedThemes.add(t) : _selectedThemes.remove(t);
-                      });
-                    },
-                  );
-                }).toList(),
+                children:
+                    _allThemes.map((t) {
+                      final selected = _selectedThemes.contains(t);
+                      return FilterChip(
+                        label: Text(t.nama),
+                        selected: selected,
+                        onSelected: (sel) {
+                          setState(() {
+                            sel
+                                ? _selectedThemes.add(t)
+                                : _selectedThemes.remove(t);
+                          });
+                        },
+                      );
+                    }).toList(),
               ),
               SizedBox(height: 16),
               // Dynamic lists
               Text('Staffs'),
-              ..._staffs.map((s) => s.build(context, onRemove: () {
+              ..._staffs.map(
+                (s) => s.build(
+                  context,
+                  onRemove: () {
                     setState(() => _staffs.remove(s));
-                  })),
+                  },
+                ),
+              ),
               TextButton.icon(
                 onPressed: () => setState(() => _staffs.add(StaffForm())),
                 icon: Icon(Icons.add),
                 label: Text('Tambah Staff'),
               ),
               SizedBox(height: 16),
-              Text('Seiyus'),
-              ..._seiyus.map((s) => s.build(context, onRemove: () {
-                    setState(() => _seiyus.remove(s));
-                  })),
-              TextButton.icon(
-                onPressed: () => setState(() => _seiyus.add(SeiyuForm())),
-                icon: Icon(Icons.add),
-                label: Text('Tambah Seiyu'),
-              ),
-              SizedBox(height: 16),
-              Text('Karakters'),
-              ..._karakters.map((c) => c.build(context, onRemove: () {
-                    setState(() => _karakters.remove(c));
-                  })),
-              TextButton.icon(
-                onPressed: () => setState(() => _karakters.add(CharacterForm())),
-                icon: Icon(Icons.add),
-                label: Text('Tambah Karakter'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Seiyus'),
+                        ..._seiyus.map(
+                          (s) => s.build(
+                            context,
+                            onRemove: () {
+                              setState(() => _seiyus.remove(s));
+                            },
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed:
+                              () => setState(() => _seiyus.add(SeiyuForm())),
+                          icon: Icon(Icons.add),
+                          label: Text('Tambah Seiyu'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Karakters'),
+                        ..._karakters.map(
+                          (c) => c.build(
+                            context,
+                            onRemove: () {
+                              setState(() => _karakters.remove(c));
+                            },
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed:
+                              () => setState(
+                                () => _karakters.add(CharacterForm()),
+                              ),
+                          icon: Icon(Icons.add),
+                          label: Text('Tambah Karakter'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               SizedBox(height: 16),
               // Cover picker
@@ -227,14 +399,19 @@ class _MovieFormPageState extends State<MovieFormPage> {
               SizedBox(height: 8),
               GestureDetector(
                 onTap: _pickCover,
-                child: _coverImage == null
-                    ? Container(
-                        height: 150,
-                        width: double.infinity,
-                        color: Colors.grey[300],
-                        child: Icon(Icons.add_a_photo, size: 50),
-                      )
-                    : Image.file(_coverImage!, height: 150, fit: BoxFit.cover),
+                child:
+                    _coverImage == null
+                        ? Container(
+                          height: 150,
+                          width: double.infinity,
+                          color: Colors.grey[300],
+                          child: Icon(Icons.add_a_photo, size: 50),
+                        )
+                        : Image.file(
+                          _coverImage!,
+                          height: 150,
+                          fit: BoxFit.cover,
+                        ),
               ),
               SizedBox(height: 24),
               SizedBox(
@@ -274,10 +451,7 @@ class StaffForm {
             ),
             Align(
               alignment: Alignment.centerRight,
-              child: IconButton(
-                icon: Icon(Icons.delete),
-                onPressed: onRemove,
-              ),
+              child: IconButton(icon: Icon(Icons.delete), onPressed: onRemove),
             ),
           ],
         ),
@@ -333,5 +507,14 @@ class CharacterForm {
 }
 
 // Dummy models for compile-time
-class Genre { final int id; final String nama; Genre({required this.id, required this.nama}); }
-class ThemeModel { final int id; final String nama; ThemeModel({required this.id, required this.nama}); }
+class Genre {
+  final int id;
+  final String nama;
+  Genre({required this.id, required this.nama});
+}
+
+class ThemeModel {
+  final int id;
+  final String nama;
+  ThemeModel({required this.id, required this.nama});
+}
