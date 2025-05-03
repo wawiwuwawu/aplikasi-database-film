@@ -34,11 +34,11 @@ class _MovieListScreenState extends State<MovieListScreen> {
   }
 
   Future<void> _loadUserRole() async {
-    final roleFromDatabase = await Future.value('admin'); // Ganti dengan logika sebenarnya
+    final roleFromDatabase = await Future.value('admin');
 
     setState(() {
       _userRole = roleFromDatabase.toLowerCase();
-      print('Role pengguna: $_userRole'); // Debugging
+      print('Role pengguna: $_userRole');
     });
   }
 
@@ -132,7 +132,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
                 child: const Icon(Icons.add),
               ),
             )
-          : null, // Tidak menampilkan tombol jika bukan Admin
+          : null,
     );
   }
 
