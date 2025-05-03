@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../service/movie_service.dart';
 import '../model/movie_model.dart';
 import '../screen/movie_detail.dart';
@@ -21,25 +22,11 @@ class _MovieListScreenState extends State<MovieListScreen> {
   String _searchQuery = '';
   Timer? _debounce;
 
-
-  String _userRole = 'customer';
-
   @override
   void initState() {
     super.initState();
     _loadMovies();
     _searchController.addListener(_onSearchChanged);
-
-    _loadUserRole();
-  }
-
-  Future<void> _loadUserRole() async {
-    final roleFromDatabase = await Future.value('admin');
-
-    setState(() {
-      _userRole = roleFromDatabase.toLowerCase();
-      print('Role pengguna: $_userRole');
-    });
   }
 
   @override
@@ -113,26 +100,23 @@ class _MovieListScreenState extends State<MovieListScreen> {
           itemBuilder: (context, index) => _buildMovieCard(_movies[index]),
         ),
       ),
-      // Tampilkan tombol upload hanya jika role pengguna adalah Admin
-      floatingActionButton: _userRole == 'admin'
-          ? Padding(
-              padding: const EdgeInsets.only(bottom: 80),
-              child: FloatingActionButton(
-                onPressed: () async {
-                  final result = await Navigator.push<bool>(
-                    context,
-                    MaterialPageRoute(builder: (context) => AdminMenuPage()),
-                  );
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80),
+        child: FloatingActionButton(
+          onPressed: () async {
+            final result = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(builder: (context) => AdminMenuPage()),
+            );
 
-                  if (result == true) {
-                    await _loadMovies();
-                  }
-                },
-                tooltip: 'Tambah Anime Baru',
-                child: const Icon(Icons.add),
-              ),
-            )
-          : null,
+            if (result == true) {
+              await _loadMovies();
+            }
+          },
+          tooltip: 'Tambah Anime Baru',
+          child: const Icon(Icons.add),
+        ),
+      ),
     );
   }
 
