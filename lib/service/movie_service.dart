@@ -96,4 +96,35 @@ class MovieApiService {
       throw Exception('Upload failed: ${response.statusCode} - $responseBody');
     }
   }
+
+  Future<List<Movie>> searchMovies(String name) async {
+    final uri = Uri.parse('$_baseUrl/search').replace(
+      queryParameters: {
+        'name': name, // Parameter pencarian sesuai dengan API
+      },
+    );
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+
+      if (jsonData['data'] is List) {
+        return (jsonData['data'] as List)
+            .map((movieJson) => Movie.fromJson(movieJson))
+            .toList();
+      } else {
+        throw Exception('Invalid API response structure');
+      }
+    } else {
+      throw Exception(
+        'Failed to search movies: ${response.statusCode} - ${response.body}',
+      );
+    }
+  }
 }

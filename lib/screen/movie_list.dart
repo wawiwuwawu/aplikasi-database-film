@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/service/preferences_service.dart';
+import 'package:flutter_application_1/service/user_credential.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../service/movie_service.dart';
 import '../model/movie_model.dart';
@@ -21,10 +23,12 @@ class _MovieListScreenState extends State<MovieListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   Timer? _debounce;
+  Credentials? _credentials;
 
   @override
   void initState() {
     super.initState();
+    _getCredentials();
     _loadMovies();
     _searchController.addListener(_onSearchChanged);
   }
@@ -36,26 +40,52 @@ class _MovieListScreenState extends State<MovieListScreen> {
     super.dispose();
   }
 
-  Future<void> _loadMovies() async {
-    setState(() {
-      _futureMovies = _apiService.getMovies(query: _searchQuery);
-    });
+  void performSearch(String query) async {
+    try {
+      final movies = await _apiService.searchMovies(query);
+      setState(() {
+        _movies
+          ..clear()
+          ..addAll(movies);
+      });
+      print('Hasil pencarian: ${movies.length} film ditemukan');
+    } catch (e) {
+      print('Error saat mencari film: $e');
+    }
+  }
 
-    final movies = await _futureMovies;
-    setState(() {
-      _movies
-        ..clear()
-        ..addAll(movies);
-    });
+  Future _getCredentials() async {
+    final prefs = PreferencesService.getCredentials();
+    print(prefs);
+    if (prefs != null) {
+      setState(() {
+        _credentials = prefs;
+      });
+    }
+  }
+
+  Future<void> _loadMovies() async {
+    try {
+      final movies = await _apiService.getMovies(query: '');
+      setState(() {
+        _movies
+          ..clear()
+          ..addAll(movies);
+      });
+    } catch (e) {
+      print('Error saat memuat film: $e');
+    }
   }
 
   void _onSearchChanged() {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      setState(() {
-        _searchQuery = _searchController.text.trim();
-      });
-      _loadMovies();
+      final query = _searchController.text.trim();
+      if (query.isNotEmpty) {
+        performSearch(query); // Panggil pencarian
+      } else {
+        _loadMovies(); // Muat ulang daftar utama jika query kosong
+      }
     });
   }
 
@@ -65,6 +95,9 @@ class _MovieListScreenState extends State<MovieListScreen> {
       appBar: AppBar(
         title: TextField(
           controller: _searchController,
+          onChanged: (value) {
+            performSearch(value); // Panggil metode pencarian
+          },
           decoration: InputDecoration(
             hintText: 'Cari Anime...',
             border: InputBorder.none,
@@ -75,9 +108,9 @@ class _MovieListScreenState extends State<MovieListScreen> {
                     onPressed: () {
                       setState(() {
                         _searchController.clear();
-                        _searchQuery = '';
+                        _movies.clear(); // Kosongkan daftar film
                       });
-                      _loadMovies();
+                      _loadMovies(); // Muat ulang daftar utama
                     },
                   )
                 : null,
@@ -88,35 +121,47 @@ class _MovieListScreenState extends State<MovieListScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _loadMovies,
-        child: GridView.builder(
-          padding: const EdgeInsets.all(8),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.6,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: _movies.length,
-          itemBuilder: (context, index) => _buildMovieCard(_movies[index]),
-        ),
+        child: _movies.isEmpty
+            ? Center(
+                child: Text(
+                  _searchController.text.isEmpty
+                      ? 'Tidak ada film tersedia'
+                      : 'Tidak ada hasil ditemukan',
+                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                ),
+              )
+            : GridView.builder(
+                padding: const EdgeInsets.all(8),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.6,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                ),
+                itemCount: _movies.length,
+                itemBuilder: (context, index) => _buildMovieCard(_movies[index]),
+              ),
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80),
-        child: FloatingActionButton(
-          onPressed: () async {
-            final result = await Navigator.push<bool>(
-              context,
-              MaterialPageRoute(builder: (context) => AdminMenuPage()),
-            );
+      floatingActionButton:
+          _credentials!.role == "customer"
+              ? const SizedBox.shrink()
+              : Padding(
+                padding: const EdgeInsets.only(bottom: 80),
+                child: FloatingActionButton(
+                  onPressed: () async {
+                    final result = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(builder: (context) => AdminMenuPage()),
+                    );
 
-            if (result == true) {
-              await _loadMovies();
-            }
-          },
-          tooltip: 'Tambah Anime Baru',
-          child: const Icon(Icons.add),
-        ),
-      ),
+                    if (result == true) {
+                      await _loadMovies();
+                    }
+                  },
+                  tooltip: 'Tambah Anime Baru',
+                  child: const Icon(Icons.add),
+                ),
+              ),
     );
   }
 
@@ -141,7 +186,8 @@ class _MovieListScreenState extends State<MovieListScreen> {
                 child: CachedNetworkImage(
                   imageUrl: movie.coverUrl,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(color: Colors.grey[200]),
+                  placeholder:
+                      (context, url) => Container(color: Colors.grey[200]),
                   errorWidget: (context, url, error) => const Icon(Icons.error),
                 ),
               ),
@@ -163,20 +209,14 @@ class _MovieListScreenState extends State<MovieListScreen> {
                   const SizedBox(height: 4),
                   Text(
                     '${movie.tahunRilis} • ${movie.type}',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       const Icon(Icons.star, color: Colors.amber, size: 16),
                       const SizedBox(width: 4),
-                      Text(
-                        movie.rating,
-                        style: const TextStyle(fontSize: 12),
-                      ),
+                      Text(movie.rating, style: const TextStyle(fontSize: 12)),
                     ],
                   ),
                 ],
