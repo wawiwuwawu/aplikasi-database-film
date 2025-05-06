@@ -4,8 +4,8 @@ class Staff {
   final String? birthday;
   final String role;
   final String? bio;
-  final String profileUrl;
-  final List<MovieStaff>? movies;
+  final String? profileUrl;
+  final List<MovieStaff> movies;
 
   Staff({
     required this.id,
@@ -13,8 +13,8 @@ class Staff {
     this.birthday,
     required this.role,
     this.bio,
-    required this.profileUrl,
-    this.movies,
+    this.profileUrl,
+    this.movies = const [],
   });
 
   Staff copyWith({
@@ -24,7 +24,6 @@ class Staff {
     String? role,
     String? bio,
     String? profileUrl,
-    List<MovieStaff>? movies,
   }) {
     return Staff(
       id: id ?? this.id,
@@ -33,21 +32,22 @@ class Staff {
       role: role ?? this.role,
       bio: bio ?? this.bio,
       profileUrl: profileUrl ?? this.profileUrl,
-      movies: movies ?? this.movies,
     );
   }
 
   factory Staff.fromJson(Map<String, dynamic> json) {
     return Staff(
-      id: json['id'],
-      name: json['name'],
-      birthday: json['birthday'],
-      role: json['role'],
-      bio: json['bio'],
-      profileUrl: json['profile_url'],
-      movies: (json['movies'] as List)
-          .map((movie) => MovieStaff.fromJson(movie))
-          .toList(),
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse('${json['id']}') ?? 0,
+      name: json['name'] as String? ?? 'Unknown',
+      birthday: json['birthday'] as String?,
+      role: json['role'] as String? ?? 'Staff',
+      bio: json['bio'] as String?,
+      profileUrl: json['profile_url'] as String?,
+      movies: (json['movies'] as List<dynamic>?)
+          ?.map((m) => MovieStaff.fromJson(m as Map<String, dynamic>))
+          .toList() ?? [],
     );
   }
 }
@@ -55,37 +55,45 @@ class Staff {
 class MovieStaff {
   final int id;
   final String judul;
-  final String sinopsis;
-  final int tahunRilis;
-  final String type;
-  final int episode;
-  final int durasi;
-  final String rating;
-  final String coverUrl;
+  final String? sinopsis;
+  final int? tahunRilis;
+  final String? type;
+  final int? episode;
+  final int? durasi;
+  final String? rating;
+  final String? coverUrl;
 
   MovieStaff({
     required this.id,
     required this.judul,
-    required this.sinopsis,
-    required this.tahunRilis,
-    required this.type,
-    required this.episode,
-    required this.durasi,
-    required this.rating,
-    required this.coverUrl,
+    this.sinopsis,
+    this.tahunRilis,
+    this.type,
+    this.episode,
+    this.durasi,
+    this.rating,
+    this.coverUrl,
   });
 
   factory MovieStaff.fromJson(Map<String, dynamic> json) {
     return MovieStaff(
-      id: json['id'],
-      judul: json['judul'],
-      sinopsis: json['sinopsis'],
-      tahunRilis: json['tahun_rilis'],
-      type: json['type'],
-      episode: json['episode'],
-      durasi: json['durasi'],
-      rating: json['rating'],
-      coverUrl: json['cover_url'],
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse('${json['id']}') ?? 0,
+      judul: json['judul'] as String? ?? 'Untitled',
+      sinopsis: json['sinopsis'] as String?,
+      tahunRilis: json['tahun_rilis'] is int
+          ? json['tahun_rilis'] as int
+          : int.tryParse('${json['tahun_rilis']}'),
+      type: json['type'] as String?,
+      episode: json['episode'] is int
+          ? json['episode'] as int
+          : int.tryParse('${json['episode']}'),
+      durasi: json['durasi'] is int
+          ? json['durasi'] as int
+          : int.tryParse('${json['durasi']}'),
+      rating: json['rating'] as String?,
+      coverUrl: json['cover_url'] as String?,
     );
   }
 }

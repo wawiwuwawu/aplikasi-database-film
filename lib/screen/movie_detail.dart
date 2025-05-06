@@ -59,11 +59,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     );
   }
 
-  Widget _buildCoverImage(String url) {
+  Widget _buildCoverImage(String? url) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: CachedNetworkImage(
-        imageUrl: url,
+        imageUrl: url ?? '',
         width: 200, // Lebar penuh layar
         fit: BoxFit.cover,
         placeholder: (context, url) => _buildPlaceholder(),
@@ -171,10 +171,10 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         const SizedBox(height: 8),
         ...staffs.map((staff) => ListTile(
               leading: CircleAvatar(
-                backgroundImage: staff.profileUrl.isNotEmpty
-                    ? CachedNetworkImageProvider(staff.profileUrl)
+                backgroundImage: (staff.profileUrl?.isNotEmpty == true)
+                    ? CachedNetworkImageProvider(staff.profileUrl!)
                     : null,
-                child: staff.profileUrl.isEmpty ? const Icon(Icons.person) : null,
+                child: (staff.profileUrl?.isEmpty ?? true) ? const Icon(Icons.person) : null,
               ),
               title: Text(staff.name),
               subtitle: Text(staff.role),
@@ -192,14 +192,14 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         Text('Pengisi Suara', style: _sectionTitleStyle(context)),
         const SizedBox(height: 8),
         ...seiyus.map((seiyu) {
-          final karakterRelasi = karakters.where((k) => k.id == seiyu.seiyuMovie.karakterId).toList();
+          final karakterRelasi = karakters.where((k) => k.id == seiyu.seiyuMovie?.karakterId).toList();
 
           return ListTile(
             leading: CircleAvatar(
-              backgroundImage: seiyu.profileUrl.isNotEmpty
-                  ? CachedNetworkImageProvider(seiyu.profileUrl)
+              backgroundImage: (seiyu.profileUrl?.isNotEmpty == true)
+                  ? CachedNetworkImageProvider(seiyu.profileUrl!)
                   : null,
-              child: seiyu.profileUrl.isEmpty ? const Icon(Icons.person) : null,
+              child: (seiyu.profileUrl?.isEmpty ?? true) ? const Icon(Icons.person) : null,
             ),
             title: Text(seiyu.name),
             subtitle: karakterRelasi.isNotEmpty
@@ -251,7 +251,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: CachedNetworkImage(
-                        imageUrl: karakter.profileUrl,
+                        imageUrl: karakter.profileUrl ?? '',
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(color: Colors.grey[200]),
                         errorWidget: (context, url, error) => const Icon(Icons.error),

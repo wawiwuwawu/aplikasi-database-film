@@ -166,5 +166,16 @@ class KarakterService {
     }
   }
 
+  Future<void> deleteKarakter(int id) async {
+    final uri = Uri.parse('$_baseUrl/$id');
+    final response = await http.delete(uri);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      print('Karakter berhasil dihapus');
+    } else {
+      throw Exception('Gagal menghapus karakter: ${response.statusCode}');
+    }
+  }
+
 }
 

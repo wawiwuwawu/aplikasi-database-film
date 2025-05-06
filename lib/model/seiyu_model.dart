@@ -8,8 +8,8 @@ class Seiyu {
   final String? twitterUrl;
   final String? youtubeUrl;
   final String? profileUrl;
-  final List<KarakterSeiyu>? karakters;
-  final List<MovieSeiyu>? movies;
+  final List<KarakterSeiyu> karakters;
+  final List<MovieSeiyu> movies;
 
   Seiyu({
     required this.id,
@@ -21,8 +21,8 @@ class Seiyu {
     this.twitterUrl,
     this.youtubeUrl,
     this.profileUrl,
-    this.karakters,
-    this.movies,
+    this.karakters = const [],
+    this.movies = const [],
   });
 
   Seiyu copyWith({
@@ -51,21 +51,21 @@ class Seiyu {
 
   factory Seiyu.fromJson(Map<String, dynamic> json) {
     return Seiyu(
-      id: json['id'],
-      name: json['name'],
-      birthday: json['birthday'],
-      bio: json['bio'],
-      websiteUrl: json['website_url'],
-      instagramUrl: json['instagram_url'],
-      twitterUrl: json['twitter_url'],
-      youtubeUrl: json['youtube_url'],
-      profileUrl: json['profile_url'],
-      karakters: (json['karakters'] as List)
-          .map((k) => KarakterSeiyu.fromJson(k))
-          .toList(),
-      movies: (json['movies'] as List)
-          .map((m) => MovieSeiyu.fromJson(m))
-          .toList(),
+      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
+      name: json['name'] as String? ?? 'Unknown',
+      birthday: json['birthday'] as String?,
+      bio: json['bio'] as String?,
+      websiteUrl: json['website_url'] as String?,
+      instagramUrl: json['instagram_url'] as String?,
+      twitterUrl: json['twitter_url'] as String?,
+      youtubeUrl: json['youtube_url'] as String?,
+      profileUrl: json['profile_url'] as String?,
+      karakters: (json['karakters'] as List<dynamic>?)
+          ?.map((k) => KarakterSeiyu.fromJson(k as Map<String, dynamic>))
+          .toList() ?? [],
+      movies: (json['movies'] as List<dynamic>?)
+          ?.map((m) => MovieSeiyu.fromJson(m as Map<String, dynamic>))
+          .toList() ?? [],
     );
   }
 }
@@ -73,22 +73,22 @@ class Seiyu {
 class KarakterSeiyu {
   final int id;
   final String nama;
-  final String bio;
-  final String profileUrl;
+  final String? bio;
+  final String? profileUrl;
 
   KarakterSeiyu({
     required this.id,
     required this.nama,
-    required this.bio,
-    required this.profileUrl,
+    this.bio,
+    this.profileUrl,
   });
 
   factory KarakterSeiyu.fromJson(Map<String, dynamic> json) {
     return KarakterSeiyu(
-      id: json['id'],
-      nama: json['nama'],
-      bio: json['bio'],
-      profileUrl: json['profile_url'],
+      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
+      nama: json['nama'] as String? ?? 'Unknown',
+      bio: json['bio'] as String?,
+      profileUrl: json['profile_url'] as String?,
     );
   }
 }
@@ -96,37 +96,37 @@ class KarakterSeiyu {
 class MovieSeiyu {
   final int id;
   final String judul;
-  final String sinopsis;
-  final int tahunRilis;
-  final String type;
-  final int episode;
-  final int durasi;
-  final String rating;
-  final String coverUrl;
+  final String? sinopsis;
+  final int? tahunRilis;
+  final String? type;
+  final int? episode;
+  final int? durasi;
+  final String? rating;
+  final String? coverUrl;
 
   MovieSeiyu({
     required this.id,
     required this.judul,
-    required this.sinopsis,
-    required this.tahunRilis,
-    required this.type,
-    required this.episode,
-    required this.durasi,
-    required this.rating,
-    required this.coverUrl,
+    this.sinopsis,
+    this.tahunRilis,
+    this.type,
+    this.episode,
+    this.durasi,
+    this.rating,
+    this.coverUrl,
   });
 
   factory MovieSeiyu.fromJson(Map<String, dynamic> json) {
     return MovieSeiyu(
-      id: json['id'],
-      judul: json['judul'],
-      sinopsis: json['sinopsis'],
-      tahunRilis: json['tahun_rilis'],
-      type: json['type'],
-      episode: json['episode'],
-      durasi: json['durasi'],
-      rating: json['rating'],
-      coverUrl: json['cover_url'],
+      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
+      judul: json['judul'] as String? ?? 'Untitled',
+      sinopsis: json['sinopsis'] as String?,
+      tahunRilis: json['tahun_rilis'] is int ? json['tahun_rilis'] as int : int.tryParse('${json['tahun_rilis']}'),
+      type: json['type'] as String?,
+      episode: json['episode'] is int ? json['episode'] as int : int.tryParse('${json['episode']}'),
+      durasi: json['durasi'] is int ? json['durasi'] as int : int.tryParse('${json['durasi']}'),
+      rating: json['rating'] as String?,
+      coverUrl: json['cover_url'] as String?,
     );
   }
 }

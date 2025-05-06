@@ -134,6 +134,56 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
     }
   }
 
+  Future<void> _deleteKarakter() async {
+    if (_selectedKarakter == null) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _apiService.deleteKarakter(_selectedKarakter!.id); // Panggil API delete
+      _resetForm(); // Reset form setelah karakter dihapus
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Karakter berhasil dihapus!')),
+      );
+    } catch (e) {
+      setState(() => _errorMessage = 'Error: ${e.toString()}');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _showDeleteConfirmationDialog() async {
+    if (_selectedKarakter == null) return;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Konfirmasi Hapus'),
+          content: Text('Apakah Anda yakin ingin menghapus karakter "${_selectedKarakter!.nama}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false), // Batalkan
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true), // Konfirmasi
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      await _deleteKarakter(); // Lakukan penghapusan jika dikonfirmasi
+    }
+  }
+
   void _resetForm() {
     setState(() {
       _formKey.currentState?.reset();
@@ -288,7 +338,7 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
       appBar: AppBar(
         title: const Text('Kelola Karakter'),
         actions: [
-          if (_selectedKarakter != null) // Tampilkan tombol hanya jika dalam mode update
+          if (_selectedKarakter != null)
             IconButton(
               icon: const Icon(Icons.cancel),
               onPressed: _resetForm,
@@ -331,7 +381,7 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
                 validator: (v) => (v?.isEmpty ?? true) ? 'Harus diisi' : null,
               ),
               const SizedBox(height: 20),
-              _buildImagePicker(), // Tambahkan preview gambar di sini
+              _buildImagePicker(),
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 icon: _isLoading
@@ -349,13 +399,12 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
                   minimumSize: const Size(double.infinity, 50),
                 ),
               ),
-              if (_selectedKarakter != null) // Tampilkan tombol batal jika dalam mode update
-                const SizedBox(height: 20),
+              if (_selectedKarakter != null) const SizedBox(height: 20),
               if (_selectedKarakter != null)
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.cancel),
-                  label: const Text('Batal'),
-                  onPressed: _resetForm,
+                  icon: const Icon(Icons.delete),
+                  label: const Text('Hapus'),
+                  onPressed: _isLoading ? null : _showDeleteConfirmationDialog,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     minimumSize: const Size(double.infinity, 50),

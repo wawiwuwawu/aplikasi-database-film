@@ -189,7 +189,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
                       leading: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: CachedNetworkImage(
-                          imageUrl: movie.coverUrl,
+                          imageUrl: movie.coverUrl ?? '',
                           width: 50,
                           height: 75,
                           fit: BoxFit.cover,
@@ -270,7 +270,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: CachedNetworkImage(
-                  imageUrl: movie.coverUrl,
+                  imageUrl: movie.coverUrl ?? '',
                   fit: BoxFit.cover,
                   placeholder:
                       (context, url) => Container(color: Colors.grey[200]),
@@ -302,7 +302,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
                     children: [
                       const Icon(Icons.star, color: Colors.amber, size: 16),
                       const SizedBox(width: 4),
-                      Text(movie.rating, style: const TextStyle(fontSize: 12)),
+                      Text(movie.rating ?? 'N/A', style: const TextStyle(fontSize: 12)),
                     ],
                   ),
                 ],
@@ -346,7 +346,7 @@ class SearchResultScreen extends StatelessWidget {
                     leading: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: CachedNetworkImage(
-                        imageUrl: movie.coverUrl,
+                        imageUrl: movie.coverUrl ?? '',
                         width: 50,
                         height: 75,
                         fit: BoxFit.cover,
