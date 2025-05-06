@@ -10,7 +10,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-  // int _selectedIndex = 0;
+
 
   void _onNavTapped(int index) {
     setState(() {
@@ -18,7 +18,7 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  // Contoh konten halaman (untuk demo saja)
+
   final List<Widget> _pages = [
     MovieListScreen(),
     WishlistScreen(),
@@ -28,14 +28,14 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(  
-      extendBody: true, // Biar nav bar bisa melayang di atas body
+      extendBody: true,
       body: _pages[_currentIndex],
       bottomNavigationBar:  Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0), // Lebih rapat ke layar
+  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
   child: ClipRRect(
     borderRadius: BorderRadius.circular(30),
     child: Container(
-      height: 70, // <<< Atur tinggi navbar di sini
+      height: 70,
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -53,9 +53,9 @@ class _MainScreenState extends State<MainScreen> {
         onTap: _onNavTapped,
         selectedItemColor: Colors.orange,
         unselectedItemColor: Colors.grey,
-        iconSize: 26, // <<< Ukuran icon
-        selectedFontSize: 14, // <<< Ukuran teks aktif
-        unselectedFontSize: 12, // <<< Ukuran teks tidak aktif
+        iconSize: 26,
+        selectedFontSize: 14,
+        unselectedFontSize: 12,
         showSelectedLabels: true,
         showUnselectedLabels: false,
         items: const [

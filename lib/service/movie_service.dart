@@ -100,7 +100,7 @@ class MovieApiService {
   Future<List<Movie>> searchMovies(String name) async {
     final uri = Uri.parse('$_baseUrl/search').replace(
       queryParameters: {
-        'name': name, // Parameter pencarian sesuai dengan API
+        'name': name,
       },
     );
 

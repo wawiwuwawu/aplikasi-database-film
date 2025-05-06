@@ -20,6 +20,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   final MovieApiService _apiService = MovieApiService();
   late Future<List<Movie>> _futureMovies;
   final List<Movie> _movies = [];
+  final List<Movie> _suggestions = [];
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   Timer? _debounce;
@@ -41,12 +42,19 @@ class _MovieListScreenState extends State<MovieListScreen> {
   }
 
   void performSearch(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _suggestions.clear(); // Kosongkan suggestion jika query kosong
+      });
+      return;
+    }
+
     try {
       final movies = await _apiService.searchMovies(query);
       setState(() {
-        _movies
+        _suggestions
           ..clear()
-          ..addAll(movies);
+          ..addAll(movies); // Perbarui daftar suggestion
       });
       print('Hasil pencarian: ${movies.length} film ditemukan');
     } catch (e) {
@@ -84,7 +92,9 @@ class _MovieListScreenState extends State<MovieListScreen> {
       if (query.isNotEmpty) {
         performSearch(query); // Panggil pencarian
       } else {
-        _loadMovies(); // Muat ulang daftar utama jika query kosong
+        setState(() {
+          _suggestions.clear(); // Kosongkan suggestion jika input kosong
+        });
       }
     });
   }
@@ -96,7 +106,23 @@ class _MovieListScreenState extends State<MovieListScreen> {
         title: TextField(
           controller: _searchController,
           onChanged: (value) {
-            performSearch(value); // Panggil metode pencarian
+            if (value.isNotEmpty) {
+              performSearch(value); // Panggil pencarian
+            } else {
+              setState(() {
+                _suggestions.clear(); // Kosongkan suggestion jika input kosong
+              });
+            }
+          },
+          onSubmitted: (value) async {
+            // Tampilkan semua hasil pencarian saat tombol Enter ditekan
+            final movies = await _apiService.searchMovies(value);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SearchResultScreen(searchResults: movies),
+              ),
+            );
           },
           decoration: InputDecoration(
             hintText: 'Cari Anime...',
@@ -108,7 +134,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
                     onPressed: () {
                       setState(() {
                         _searchController.clear();
-                        _movies.clear(); // Kosongkan daftar film
+                        _suggestions.clear(); // Kosongkan suggestion
                       });
                       _loadMovies(); // Muat ulang daftar utama
                     },
@@ -119,28 +145,88 @@ class _MovieListScreenState extends State<MovieListScreen> {
           ),
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadMovies,
-        child: _movies.isEmpty
-            ? Center(
-                child: Text(
-                  _searchController.text.isEmpty
-                      ? 'Tidak ada film tersedia'
-                      : 'Tidak ada hasil ditemukan',
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+      body: Stack(
+        children: [
+          // Daftar utama
+          RefreshIndicator(
+            onRefresh: _loadMovies,
+            child: _movies.isEmpty
+                ? Center(
+                    child: Text(
+                      _searchController.text.isEmpty
+                          ? 'Tidak ada film tersedia'
+                          : 'Tidak ada hasil ditemukan',
+                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    ),
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.all(8),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.6,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
+                    itemCount: _movies.length,
+                    itemBuilder: (context, index) =>
+                        _buildMovieCard(_movies[index]),
+                  ),
+          ),
+          // Layer suggestion
+          if (_suggestions.isNotEmpty)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.25, // 1/4 layar
+                color: Colors.white,
+                child: ListView.builder(
+                  itemCount: _suggestions.length,
+                  itemBuilder: (context, index) {
+                    final movie = _suggestions[index];
+                    return ListTile(
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: movie.coverUrl,
+                          width: 50,
+                          height: 75,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) =>
+                              Container(color: Colors.grey[200]),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.error),
+                        ),
+                      ),
+                      title: Text(
+                        movie.judul,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        '${movie.tahunRilis} • ${movie.type}',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                MovieDetailScreen(movie: movie),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
-              )
-            : GridView.builder(
-                padding: const EdgeInsets.all(8),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.6,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                ),
-                itemCount: _movies.length,
-                itemBuilder: (context, index) => _buildMovieCard(_movies[index]),
               ),
+            ),
+        ],
       ),
       floatingActionButton:
           _credentials!.role == "customer"
@@ -225,6 +311,77 @@ class _MovieListScreenState extends State<MovieListScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class SearchResultScreen extends StatelessWidget {
+  final List<Movie> searchResults;
+
+  const SearchResultScreen({Key? key, required this.searchResults})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Hasil Pencarian'),
+      ),
+      body: searchResults.isEmpty
+          ? Center(
+              child: Text(
+                'Tidak ada hasil ditemukan',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(8),
+              itemCount: searchResults.length,
+              itemBuilder: (context, index) {
+                final movie = searchResults[index];
+                return Card(
+                  elevation: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  child: ListTile(
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: CachedNetworkImage(
+                        imageUrl: movie.coverUrl,
+                        width: 50,
+                        height: 75,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) =>
+                            Container(color: Colors.grey[200]),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.error),
+                      ),
+                    ),
+                    title: Text(
+                      movie.judul,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      '${movie.tahunRilis} • ${movie.type}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              MovieDetailScreen(movie: movie),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
     );
   }
 }
