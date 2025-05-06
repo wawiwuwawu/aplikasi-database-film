@@ -15,17 +15,21 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
   final _formKey = GlobalKey<FormState>();
   final _namaController = TextEditingController();
   final _bioController = TextEditingController();
+  final _searchController = TextEditingController();
   final _picker = ImagePicker();
   final _apiService = KarakterService();
 
   File? _coverImage;
   bool _isLoading = false;
   String? _errorMessage;
+  final List<Karakter> _searchResults = [];
+  Karakter? _selectedKarakter;
 
   @override
   void dispose() {
     _namaController.dispose();
     _bioController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -38,10 +42,51 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
     }
   }
 
+  Future<void> _searchKarakter() async {
+    if (_searchController.text.isEmpty) {
+      setState(() => _errorMessage = 'Masukkan nama karakter untuk mencari');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _searchResults.clear();
+    });
+
+    try {
+      final results = await _apiService.searchKarakterByName(_searchController.text);
+
+      if (results.isEmpty) {
+        setState(() => _errorMessage = 'Karakter tidak ditemukan');
+        return;
+      }
+
+      setState(() {
+        _searchResults.addAll(results);
+      });
+    } catch (e) {
+      setState(() => _errorMessage = 'Error saat mencari: ${e.toString()}');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _selectKarakter(Karakter karakter) {
+    setState(() {
+      _selectedKarakter = karakter;
+      _namaController.text = karakter.nama;
+      _bioController.text = karakter.bio ?? '';
+      _coverImage = null;
+      _searchResults.clear();
+    });
+  }
+
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_coverImage == null) {
-      setState(() => _errorMessage = 'Cover wajib dipilih');
+
+    if (_selectedKarakter == null && _coverImage == null) {
+      setState(() => _errorMessage = 'Cover wajib dipilih untuk karakter baru');
       return;
     }
 
@@ -51,22 +96,39 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
     });
 
     try {
-      await _apiService.uploadKarakter(
-        karakter: Karakter(
-          id: 0,
-          nama: _namaController.text,
-          bio: _bioController.text,
-          profileUrl: '',
-        ),
-        coverImage: _coverImage!,
-      );
+      if (_selectedKarakter != null) {
+        await _apiService.updateKarakter(
+          id: _selectedKarakter!.id,
+          karakter: Karakter(
+            id: _selectedKarakter!.id,
+            nama: _namaController.text,
+            bio: _bioController.text,
+            profileUrl: _selectedKarakter!.profileUrl,
+          ),
+          coverImage: _coverImage,
+        );
+      } else {
+        await _apiService.uploadKarakter(
+          karakter: Karakter(
+            id: 0,
+            nama: _namaController.text,
+            bio: _bioController.text,
+            profileUrl: '',
+          ),
+          coverImage: _coverImage!,
+        );
+      }
 
       _resetForm();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Upload berhasil!')),
+        SnackBar(
+          content: Text(_selectedKarakter != null
+              ? 'Update berhasil!'
+              : 'Upload berhasil!'),
+        ),
       );
     } catch (e) {
-      setState(() => _errorMessage = 'Error saat upload: ${e.toString()}');
+      setState(() => _errorMessage = 'Error: ${e.toString()}');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -77,10 +139,89 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
       _formKey.currentState?.reset();
       _namaController.clear();
       _bioController.clear();
+      _searchController.clear();
       _coverImage = null;
       _errorMessage = null;
       _isLoading = false;
+      _selectedKarakter = null;
     });
+  }
+
+  Widget _buildSearchField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _searchController,
+                decoration: const InputDecoration(
+                  labelText: 'Cari Karakter (untuk edit)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.search),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: _isLoading ? null : _searchKarakter,
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Cari'),
+            ),
+          ],
+        ),
+        _buildSearchResults(),
+      ],
+    );
+  }
+
+  Widget _buildSearchResults() {
+    if (_searchResults.isEmpty) return const SizedBox();
+
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 200),
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListView.builder(
+        itemCount: _searchResults.length,
+        itemBuilder: (context, index) {
+          final karakter = _searchResults[index];
+          return ListTile(
+            leading: karakter.profileUrl != null && karakter.profileUrl!.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      karakter.profileUrl!,
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.error, size: 50),
+                    ),
+                  )
+                : const Icon(Icons.person, size: 50), // Default icon jika tidak ada foto
+            title: Text(karakter.nama),
+            subtitle: Text(karakter.bio ?? 'Tidak ada bio'),
+            onTap: () {
+              _selectKarakter(karakter);
+            },
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildFormField({
@@ -101,6 +242,23 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
     );
   }
 
+  Widget _buildIdField() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          'ID Karakter: ${_selectedKarakter?.id.toString() ?? 'ID belum tersedia'}',
+          style: const TextStyle(fontSize: 16),
+        ),
+      ),
+    );
+  }
+
   Widget _buildImagePicker() {
     return InkWell(
       onTap: _pickImage,
@@ -111,15 +269,15 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
           border: Border.all(color: Colors.grey),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: _coverImage == null
-            ? const Center(child: Text('Pilih Profile'))
-            : ClipRRect(
+        child: _coverImage != null
+            ? ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.file(
                   _coverImage!,
                   fit: BoxFit.cover,
                 ),
-              ),
+              )
+            : const Center(child: Text('Pilih Profile')),
       ),
     );
   }
@@ -127,7 +285,17 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tambah Karakter Baru')),
+      appBar: AppBar(
+        title: const Text('Kelola Karakter'),
+        actions: [
+          if (_selectedKarakter != null) // Tampilkan tombol hanya jika dalam mode update
+            IconButton(
+              icon: const Icon(Icons.cancel),
+              onPressed: _resetForm,
+              tooltip: 'Batal Update',
+            ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -150,6 +318,8 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
                   ),
                 ),
               if (_errorMessage != null) const SizedBox(height: 16),
+              _buildSearchField(),
+              _buildIdField(),
               _buildFormField(
                 label: 'Nama',
                 controller: _namaController,
@@ -161,18 +331,36 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
                 validator: (v) => (v?.isEmpty ?? true) ? 'Harus diisi' : null,
               ),
               const SizedBox(height: 20),
-              _buildImagePicker(),
+              _buildImagePicker(), // Tambahkan preview gambar di sini
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 icon: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Icon(Icons.upload),
-                label: Text(_isLoading ? 'Mengupload...' : 'Upload'),
+                    : Icon(_selectedKarakter != null
+                        ? Icons.update
+                        : Icons.upload),
+                label: Text(_isLoading
+                    ? 'Proses...'
+                    : _selectedKarakter != null
+                        ? 'Update Karakter'
+                        : 'Tambah Karakter'),
                 onPressed: _isLoading ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
                 ),
               ),
+              if (_selectedKarakter != null) // Tampilkan tombol batal jika dalam mode update
+                const SizedBox(height: 20),
+              if (_selectedKarakter != null)
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.cancel),
+                  label: const Text('Batal'),
+                  onPressed: _resetForm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                ),
             ],
           ),
         ),

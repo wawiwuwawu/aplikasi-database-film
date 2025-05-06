@@ -82,7 +82,7 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: CachedNetworkImage(
-          imageUrl: karakter.profileUrl,
+          imageUrl: karakter.profileUrl ?? '',
           height: 300, // Tinggi foto diubah
           width: 200,  // Lebar foto diubah
           fit: BoxFit.cover,
@@ -143,7 +143,7 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: CachedNetworkImage(
-          imageUrl: movie.coverUrl,
+          imageUrl: movie.coverUrl ?? '',
           width: 50,
           height: 75,
           fit: BoxFit.cover,

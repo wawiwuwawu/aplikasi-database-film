@@ -100,5 +100,71 @@ class KarakterService {
     }
   }
 
+  Future<void> updateKarakter({
+    required int id,
+    required Karakter karakter,
+    File? coverImage,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/$id');
+    final request = http.MultipartRequest('PUT', uri)
+      ..headers['Accept'] = 'application/json'
+      ..fields['nama'] = karakter.nama
+      ..fields['bio'] = karakter.bio ?? '';
+
+    // Tambahkan file gambar jika ada
+    if (coverImage != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          coverImage.path,
+          contentType: MediaType(
+            'image',
+            coverImage.path.toLowerCase().endsWith('.png') ? 'png' : 'jpeg',
+          ),
+        ),
+      );
+    }
+
+    final streamedResponse = await request.send();
+    final responseBody = await streamedResponse.stream.bytesToString();
+
+    if (streamedResponse.statusCode >= 200 && streamedResponse.statusCode < 300) {
+      print('Karakter berhasil diperbarui: $responseBody');
+    } else {
+      throw Exception('Update failed: ${streamedResponse.statusCode} – $responseBody');
+    }
+  }
+
+  Future<List<Karakter>> searchKarakterByName(String name) async {
+    final uri = Uri.parse('$_baseUrl/search').replace(
+      queryParameters: {
+        'name': name,
+      },
+    );
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+
+      if (jsonData['data'] is List) {
+        return (jsonData['data'] as List)
+            .map((karakterJson) => Karakter.fromJson(karakterJson))
+            .toList();
+      } else {
+        throw Exception('Invalid API response structure');
+      }
+    } else {
+      throw Exception(
+        'Failed to search karakter: ${response.statusCode} - ${response.body}',
+      );
+    }
+  }
+
 }
 
