@@ -157,7 +157,7 @@ class KarakterService {
             .map((karakterJson) => Karakter.fromJson(karakterJson))
             .toList();
       } else {
-        throw Exception('Invalid API response structure');
+        throw Exception('Invalid data format');
       }
     } else {
       throw Exception(

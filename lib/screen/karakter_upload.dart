@@ -66,7 +66,7 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
         _searchResults.addAll(results);
       });
     } catch (e) {
-      setState(() => _errorMessage = 'Error saat mencari: ${e.toString()}');
+      setState(() => _errorMessage = 'Terjadi kesalahan saat mencari karakter: ${e.toString()}');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -128,7 +128,7 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
         ),
       );
     } catch (e) {
-      setState(() => _errorMessage = 'Error: ${e.toString()}');
+      setState(() => _errorMessage = 'Terjadi kesalahan: ${e.toString()}');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -143,8 +143,8 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
     });
 
     try {
-      await _apiService.deleteKarakter(_selectedKarakter!.id); // Panggil API delete
-      _resetForm(); // Reset form setelah karakter dihapus
+      await _apiService.deleteKarakter(_selectedKarakter!.id);
+      _resetForm();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Karakter berhasil dihapus!')),
       );
@@ -166,11 +166,11 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
           content: Text('Apakah Anda yakin ingin menghapus karakter "${_selectedKarakter!.nama}"?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false), // Batalkan
+              onPressed: () => Navigator.of(context).pop(false),
               child: const Text('Batal'),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true), // Konfirmasi
+              onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               child: const Text('Hapus'),
             ),
@@ -180,7 +180,7 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
     );
 
     if (result == true) {
-      await _deleteKarakter(); // Lakukan penghapusan jika dikonfirmasi
+      await _deleteKarakter();
     }
   }
 
@@ -262,7 +262,7 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
                           const Icon(Icons.error, size: 50),
                     ),
                   )
-                : const Icon(Icons.person, size: 50), // Default icon jika tidak ada foto
+                : const Icon(Icons.person, size: 50),
             title: Text(karakter.nama),
             subtitle: Text(karakter.bio ?? 'Tidak ada bio'),
             onTap: () {
@@ -339,10 +339,16 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
         title: const Text('Kelola Karakter'),
         actions: [
           if (_selectedKarakter != null)
-            IconButton(
-              icon: const Icon(Icons.cancel),
+            TextButton(
               onPressed: _resetForm,
-              tooltip: 'Batal Update',
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.red,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: const Text(
+                'Batal Update',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
         ],
       ),
@@ -403,7 +409,7 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
               if (_selectedKarakter != null)
                 ElevatedButton.icon(
                   icon: const Icon(Icons.delete),
-                  label: const Text('Hapus'),
+                  label: const Text('Hapus Karakter'),
                   onPressed: _isLoading ? null : _showDeleteConfirmationDialog,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,

@@ -20,11 +20,14 @@ class _AddStaffFormState extends State<AddStaffForm> {
   final _nameController = TextEditingController();
   final _birthdateController = TextEditingController();
   final _bioController = TextEditingController();
+  final _searchController = TextEditingController();
 
   String? _selectedRole;
   File? _coverImage;
   bool _isLoading = false;
   String? _errorMessage;
+  final List<Staff> _searchResults = [];
+  Staff? _selectedStaff;
 
   @override
   void dispose() {
@@ -40,6 +43,106 @@ class _AddStaffFormState extends State<AddStaffForm> {
       setState(() {
         _coverImage = File(pickedFile.path);
       });
+    }
+  }
+
+  Future<void> _searchStaff() async {
+    if (_searchController.text.isEmpty) {
+      setState(() => _errorMessage = 'Nama staff tidak boleh kosong');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _searchResults.clear();
+    });
+
+    try {
+      final results = await _apiService.searchStaffByName(_searchController.text);
+
+      if (results.isEmpty) {
+        setState(() => _errorMessage = 'Staff tidak ditemukan');
+        return;
+      }
+
+      setState(() {
+        _searchResults.addAll(results);
+      });
+    } catch (e) {
+      setState(() => _errorMessage = 'Terjadi kesalahan saat mencari staff: ${e.toString()}');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _selectStaff(Staff staff) {
+    if (staff.id == null || staff.name.isEmpty) {
+      setState(() => _errorMessage = 'Data staff tidak valid');
+      return;
+    }
+
+    setState(() {
+      _selectedStaff = staff;
+      _nameController.text = staff.name;
+      _birthdateController.text = staff.birthday ?? '';
+      _bioController.text = staff.bio ?? '';
+      _selectedRole = staff.role;
+      _coverImage = null;
+      _searchResults.clear();
+    });
+  }
+
+  Future<void> _deleteStaff() async {
+    if (_selectedStaff == null || _selectedStaff!.id == null) {
+      setState(() => _errorMessage = 'Staff tidak valid untuk dihapus');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _apiService.deleteStaff(_selectedStaff!.id!);
+      _resetForm();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Staff berhasil dihapus!')),
+      );
+    } catch (e) {
+      setState(() => _errorMessage = 'Terjadi kesalahan: ${e.toString()}');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _showDeleteConfirmationDialog() async {
+    if (_selectedStaff == null) return;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Konfirmasi Hapus'),
+          content: Text('Apakah Anda yakin ingin menghapus staff "${_selectedStaff!.name}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      await _deleteStaff();
     }
   }
 
@@ -59,8 +162,9 @@ class _AddStaffFormState extends State<AddStaffForm> {
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_coverImage == null) {
-      setState(() => _errorMessage = 'Cover wajib dipilih');
+
+    if (_coverImage == null && _selectedStaff == null) {
+      setState(() => _errorMessage = 'Cover wajib dipilih untuk staff baru');
       return;
     }
 
@@ -70,24 +174,44 @@ class _AddStaffFormState extends State<AddStaffForm> {
     });
 
     try {
-      await _apiService.uploadStaff(
-        staff: Staff(
-          id: 0,
-          name: _nameController.text.trim(),
-          birthday: _birthdateController.text.trim(),
-          role: _selectedRole ?? '',
-          bio: _bioController.text.trim(),
-          profileUrl: '',
-        ),
-        coverImage: _coverImage!,
-      );
+      if (_selectedStaff != null) {
+        await _apiService.updateStaff(
+          id: _selectedStaff!.id!,
+          staff: Staff(
+            id: _selectedStaff!.id!,
+            name: _nameController.text.trim(),
+            birthday: _birthdateController.text.trim().isEmpty ? null : _birthdateController.text.trim(),
+            role: _selectedRole ?? '',
+            bio: _bioController.text.trim(),
+            profileUrl: _selectedStaff!.profileUrl ?? '',
+          ),
+          coverImage: _coverImage,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Staff berhasil diperbarui!')),
+        );
+      } else {
+        await _apiService.uploadStaff(
+          staff: Staff(
+            id: 0,
+            name: _nameController.text.trim(),
+            birthday: _birthdateController.text.trim().isEmpty ? null : _birthdateController.text.trim(),
+            role: _selectedRole ?? '',
+            bio: _bioController.text.trim(),
+            profileUrl: '',
+          ),
+          coverImage: _coverImage!,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Staff berhasil ditambahkan!')),
+        );
+      }
 
       _resetForm();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Upload berhasil!')),
-      );
     } catch (e) {
-      setState(() => _errorMessage = 'Error saat upload: ${e.toString()}');
+      setState(() => _errorMessage = 'Error: ${e.toString()}');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -99,11 +223,91 @@ class _AddStaffFormState extends State<AddStaffForm> {
       _nameController.clear();
       _birthdateController.clear();
       _bioController.clear();
+      _searchController.clear();
       _selectedRole = null;
       _coverImage = null;
+      _selectedStaff = null;
+      _searchResults.clear();
       _errorMessage = null;
       _isLoading = false;
     });
+  }
+
+  Widget _buildSearchField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _searchController,
+                decoration: const InputDecoration(
+                  labelText: 'Cari Staff (untuk edit)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.search),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: _isLoading ? null : _searchStaff,
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Cari'),
+            ),
+          ],
+        ),
+        _buildSearchResults(),
+      ],
+    );
+  }
+
+  Widget _buildSearchResults() {
+    if (_searchResults.isEmpty) return const SizedBox();
+
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 200),
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListView.builder(
+        itemCount: _searchResults.length,
+        itemBuilder: (context, index) {
+          final staff = _searchResults[index];
+          return ListTile(
+            leading: staff.profileUrl != null && staff.profileUrl!.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      staff.profileUrl!,
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.error, size: 50),
+                    ),
+                  )
+                : const Icon(Icons.person, size: 50),
+            title: Text(staff.name),
+            subtitle: Text(staff.bio ?? 'Tidak ada bio'),
+            onTap: () {
+              _selectStaff(staff);
+            },
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildFormField({
@@ -112,7 +316,7 @@ class _AddStaffFormState extends State<AddStaffForm> {
     String? Function(String?)? validator,
     bool readOnly = false,
     VoidCallback? onTap,
-    VoidCallback? onClear, // Tambahkan parameter untuk tombol hapus
+    VoidCallback? onClear,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -143,6 +347,23 @@ class _AddStaffFormState extends State<AddStaffForm> {
     );
   }
 
+  Widget _buildIdField() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          'ID Staff: ${_selectedStaff?.id.toString() ?? 'ID belum tersedia'}',
+          style: const TextStyle(fontSize: 16),
+        ),
+      ),
+    );
+  }
+
   Widget _buildImagePicker() {
     return InkWell(
       onTap: _pickImage,
@@ -169,7 +390,23 @@ class _AddStaffFormState extends State<AddStaffForm> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tambah Staff')),
+      appBar: AppBar(
+        title: const Text('Kelola Staff'),
+        actions: [
+          if (_selectedStaff != null)
+            ElevatedButton(
+              onPressed: _resetForm,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: const Text(
+                'Batal Update',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -192,6 +429,8 @@ class _AddStaffFormState extends State<AddStaffForm> {
                   ),
                 ),
               if (_errorMessage != null) const SizedBox(height: 16),
+              _buildSearchField(),
+              _buildIdField(),
               _buildFormField(
                 label: 'Nama',
                 controller: _nameController,
@@ -250,13 +489,30 @@ class _AddStaffFormState extends State<AddStaffForm> {
               ElevatedButton.icon(
                 icon: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Icon(Icons.upload),
-                label: Text(_isLoading ? 'Mengupload...' : 'Upload'),
+                    : Icon(_selectedStaff != null
+                        ? Icons.update
+                        : Icons.upload),
+                label: Text(_isLoading
+                    ? 'Proses...'
+                    : _selectedStaff != null
+                        ? 'Update Staff'
+                        : 'Tambah Staff'),
                 onPressed: _isLoading ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
                 ),
               ),
+              if (_selectedStaff != null) const SizedBox(height: 20),
+              if (_selectedStaff != null)
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.delete),
+                  label: const Text('Hapus Staff'),
+                  onPressed: _isLoading ? null : _showDeleteConfirmationDialog,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                ),
             ],
           ),
         ),
