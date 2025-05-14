@@ -44,7 +44,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   void performSearch(String query) async {
     if (query.isEmpty) {
       setState(() {
-        _suggestions.clear(); // Kosongkan suggestion jika query kosong
+        _suggestions.clear();
       });
       return;
     }
@@ -54,7 +54,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
       setState(() {
         _suggestions
           ..clear()
-          ..addAll(movies); // Perbarui daftar suggestion
+          ..addAll(movies);
       });
       print('Hasil pencarian: ${movies.length} film ditemukan');
     } catch (e) {
@@ -90,10 +90,10 @@ class _MovieListScreenState extends State<MovieListScreen> {
     _debounce = Timer(const Duration(milliseconds: 500), () {
       final query = _searchController.text.trim();
       if (query.isNotEmpty) {
-        performSearch(query); // Panggil pencarian
+        performSearch(query);
       } else {
         setState(() {
-          _suggestions.clear(); // Kosongkan suggestion jika input kosong
+          _suggestions.clear();
         });
       }
     });
@@ -107,16 +107,19 @@ class _MovieListScreenState extends State<MovieListScreen> {
           controller: _searchController,
           onChanged: (value) {
             if (value.isNotEmpty) {
-              performSearch(value); // Panggil pencarian
+              performSearch(value);
             } else {
               setState(() {
-                _suggestions.clear(); // Kosongkan suggestion jika input kosong
+                _suggestions.clear();
               });
             }
           },
           onSubmitted: (value) async {
-            // Tampilkan semua hasil pencarian saat tombol Enter ditekan
             final movies = await _apiService.searchMovies(value);
+            setState(() {
+              _searchController.clear();
+              _suggestions.clear();
+            });
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -134,9 +137,9 @@ class _MovieListScreenState extends State<MovieListScreen> {
                     onPressed: () {
                       setState(() {
                         _searchController.clear();
-                        _suggestions.clear(); // Kosongkan suggestion
+                        _suggestions.clear();
                       });
-                      _loadMovies(); // Muat ulang daftar utama
+                      _loadMovies();
                     },
                   )
                 : null,
@@ -168,11 +171,12 @@ class _MovieListScreenState extends State<MovieListScreen> {
                       mainAxisSpacing: 8,
                     ),
                     itemCount: _movies.length,
-                    itemBuilder: (context, index) =>
-                        _buildMovieCard(_movies[index]),
+                    itemBuilder: (context, index) => _AnimatedMovieCard(
+                      index: index,
+                      child: _buildMovieCard(_movies[index]),
+                    ),
                   ),
           ),
-          // Layer suggestion
           if (_suggestions.isNotEmpty)
             Positioned(
               top: 0,
@@ -185,42 +189,49 @@ class _MovieListScreenState extends State<MovieListScreen> {
                   itemCount: _suggestions.length,
                   itemBuilder: (context, index) {
                     final movie = _suggestions[index];
-                    return ListTile(
-                      leading: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: movie.coverUrl ?? '',
-                          width: 50,
-                          height: 75,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              Container(color: Colors.grey[200]),
-                          errorWidget: (context, url, error) =>
-                              const Icon(Icons.error),
-                        ),
-                      ),
-                      title: Text(
-                        movie.judul,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(
-                        '${movie.tahunRilis} • ${movie.type}',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                MovieDetailScreen(movie: movie),
+                    return _AnimatedMovieCard(
+                      index: index,
+                      child: ListTile(
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: CachedNetworkImage(
+                            imageUrl: movie.coverUrl,
+                            width: 50,
+                            height: 75,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) =>
+                                Container(color: Colors.grey[200]),
+                            errorWidget: (context, url, error) =>
+                                const Icon(Icons.error),
                           ),
-                        );
-                      },
+                        ),
+                        title: Text(
+                          movie.judul,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          '${movie.tahunRilis} • ${movie.type}',
+                          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        ),
+                        onTap: () {
+                          setState(() {
+                            _searchController.clear();
+                            _suggestions.clear();
+                          });
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  MovieDetailScreen(movie: movie),
+                            ),
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
@@ -270,7 +281,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: CachedNetworkImage(
-                  imageUrl: movie.coverUrl ?? '',
+                  imageUrl: movie.coverUrl,
                   fit: BoxFit.cover,
                   placeholder:
                       (context, url) => Container(color: Colors.grey[200]),
@@ -302,7 +313,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
                     children: [
                       const Icon(Icons.star, color: Colors.amber, size: 16),
                       const SizedBox(width: 4),
-                      Text(movie.rating ?? 'N/A', style: const TextStyle(fontSize: 12)),
+                      Text(movie.rating, style: const TextStyle(fontSize: 12)),
                     ],
                   ),
                 ],
@@ -311,6 +322,37 @@ class _MovieListScreenState extends State<MovieListScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AnimatedMovieCard extends StatefulWidget {
+  final Widget child;
+  final int index;
+  final Duration baseDelay = const Duration(milliseconds: 100);
+  const _AnimatedMovieCard({required this.child, required this.index, Key? key}) : super(key: key);
+
+  @override
+  State<_AnimatedMovieCard> createState() => _AnimatedMovieCardState();
+}
+
+class _AnimatedMovieCardState extends State<_AnimatedMovieCard> with SingleTickerProviderStateMixin {
+  double _opacity = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(widget.baseDelay * widget.index, () {
+      if (mounted) setState(() => _opacity = 1);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: _opacity,
+      duration: const Duration(milliseconds: 400),
+      child: widget.child,
     );
   }
 }
@@ -346,7 +388,7 @@ class SearchResultScreen extends StatelessWidget {
                     leading: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: CachedNetworkImage(
-                        imageUrl: movie.coverUrl ?? '',
+                        imageUrl: movie.coverUrl,
                         width: 50,
                         height: 75,
                         fit: BoxFit.cover,

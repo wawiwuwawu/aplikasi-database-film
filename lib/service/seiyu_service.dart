@@ -9,7 +9,7 @@ class SeiyuApiService {
 
   Future<List<Seiyu>> getSeiyuDetail({int page = 1, String? query}) async {
   
-  final uri = Uri.parse('_baseUrl/detail').replace(
+  final uri = Uri.parse('$_baseUrl/detail').replace(
     queryParameters: {
       'page': page.toString(),
       if (query != null && query.isNotEmpty) 'search': query,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
+import 'dart:async';
 import '../service/staff_service.dart';
 import '../model/staff_model.dart';
 
@@ -14,6 +15,11 @@ class AddStaffForm extends StatefulWidget {
 
 class _AddStaffFormState extends State<AddStaffForm> {
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
+  final _nameFieldKey = GlobalKey();
+  final _bioFieldKey = GlobalKey();
+  final _roleFieldKey = GlobalKey();
+  final _coverFieldKey = GlobalKey();
   final _apiService = StaffService();
   final _picker = ImagePicker();
   final _roles = ['Director', 'Producer', 'Staff'];
@@ -28,12 +34,15 @@ class _AddStaffFormState extends State<AddStaffForm> {
   String? _errorMessage;
   final List<Staff> _searchResults = [];
   Staff? _selectedStaff;
+  Timer? _debounce;
 
   @override
   void dispose() {
     _nameController.dispose();
     _birthdateController.dispose();
     _bioController.dispose();
+    _searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -54,7 +63,6 @@ class _AddStaffFormState extends State<AddStaffForm> {
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
       _searchResults.clear();
     });
 
@@ -62,7 +70,7 @@ class _AddStaffFormState extends State<AddStaffForm> {
       final results = await _apiService.searchStaffByName(_searchController.text);
 
       if (results.isEmpty) {
-        setState(() => _errorMessage = 'Staff tidak ditemukan');
+        // Tidak set errorMessage, biar hanya snackbar yang muncul
         return;
       }
 
@@ -70,14 +78,14 @@ class _AddStaffFormState extends State<AddStaffForm> {
         _searchResults.addAll(results);
       });
     } catch (e) {
-      setState(() => _errorMessage = 'Terjadi kesalahan saat mencari staff: ${e.toString()}');
+      // Tidak set errorMessage, biar hanya snackbar yang muncul
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
   void _selectStaff(Staff staff) {
-    if (staff.id == null || staff.name.isEmpty) {
+    if (staff.name.isEmpty) {
       setState(() => _errorMessage = 'Data staff tidak valid');
       return;
     }
@@ -94,7 +102,7 @@ class _AddStaffFormState extends State<AddStaffForm> {
   }
 
   Future<void> _deleteStaff() async {
-    if (_selectedStaff == null || _selectedStaff!.id == null) {
+    if (_selectedStaff == null) {
       setState(() => _errorMessage = 'Staff tidak valid untuk dihapus');
       return;
     }
@@ -105,7 +113,7 @@ class _AddStaffFormState extends State<AddStaffForm> {
     });
 
     try {
-      await _apiService.deleteStaff(_selectedStaff!.id!);
+      await _apiService.deleteStaff(_selectedStaff?.id ?? 0);
       _resetForm();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Staff berhasil dihapus!')),
@@ -160,11 +168,43 @@ class _AddStaffFormState extends State<AddStaffForm> {
     }
   }
 
-  Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _scrollToFirstError() async {
+    if (_nameController.text.isEmpty) {
+      await _ensureVisible(_nameFieldKey);
+      return;
+    }
+    if (_selectedRole == null || _selectedRole!.isEmpty) {
+      await _ensureVisible(_roleFieldKey);
+      return;
+    }
+    if (_bioController.text.isEmpty) {
+      await _ensureVisible(_bioFieldKey);
+      return;
+    }
+    if (_selectedStaff == null && _coverImage == null) {
+      await _ensureVisible(_coverFieldKey);
+      return;
+    }
+  }
 
-    if (_coverImage == null && _selectedStaff == null) {
-      setState(() => _errorMessage = 'Cover wajib dipilih untuk staff baru');
+  Future<void> _ensureVisible(GlobalKey key) async {
+    final context = key.currentContext;
+    if (context != null) {
+      await Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.1,
+      );
+    }
+  }
+
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate() || (_selectedStaff == null && _coverImage == null)) {
+      if (_selectedStaff == null && _coverImage == null) {
+        setState(() => _errorMessage = 'Cover wajib dipilih untuk staff baru');
+      }
+      await _scrollToFirstError();
       return;
     }
 
@@ -176,9 +216,9 @@ class _AddStaffFormState extends State<AddStaffForm> {
     try {
       if (_selectedStaff != null) {
         await _apiService.updateStaff(
-          id: _selectedStaff!.id!,
+          id: _selectedStaff?.id ?? 0,
           staff: Staff(
-            id: _selectedStaff!.id!,
+            id: _selectedStaff?.id ?? 0,
             name: _nameController.text.trim(),
             birthday: _birthdateController.text.trim().isEmpty ? null : _birthdateController.text.trim(),
             role: _selectedRole ?? '',
@@ -242,11 +282,39 @@ class _AddStaffFormState extends State<AddStaffForm> {
             Expanded(
               child: TextFormField(
                 controller: _searchController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Cari Staff (untuk edit)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.search),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() {
+                              _searchController.clear();
+                              _searchResults.clear();
+                              _errorMessage = null;
+                            });
+                          },
+                        )
+                      : null,
                 ),
+                onChanged: (value) {
+                  if (_debounce?.isActive ?? false) _debounce!.cancel();
+                  setState(() {}); // Untuk update suffixIcon
+                  if (value.isEmpty) {
+                    setState(() {
+                      _searchResults.clear();
+                      _errorMessage = null;
+                    });
+                    return;
+                  }
+                  _debounce = Timer(const Duration(milliseconds: 1000), () {
+                    if (value.isNotEmpty) {
+                      _searchStaff();
+                    }
+                  });
+                },
               ),
             ),
             const SizedBox(width: 8),
@@ -271,6 +339,22 @@ class _AddStaffFormState extends State<AddStaffForm> {
   }
 
   Widget _buildSearchResults() {
+    if (_searchController.text.isNotEmpty && !_isLoading && _searchResults.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).removeCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Staff tidak ditemukan'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.only(bottom: 80, left: 16, right: 16),
+            ),
+          );
+        }
+      });
+    }
     if (_searchResults.isEmpty) return const SizedBox();
 
     return Container(
@@ -317,10 +401,12 @@ class _AddStaffFormState extends State<AddStaffForm> {
     bool readOnly = false,
     VoidCallback? onTap,
     VoidCallback? onClear,
+    Key? key,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextFormField(
+        key: key,
         controller: controller,
         readOnly: readOnly,
         decoration: InputDecoration(
@@ -348,24 +434,27 @@ class _AddStaffFormState extends State<AddStaffForm> {
   }
 
   Widget _buildIdField() {
+    if (_selectedStaff == null) return const SizedBox();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
-          'ID Staff: ${_selectedStaff?.id.toString() ?? 'ID belum tersedia'}',
+          'ID Staff: ${_selectedStaff!.id}',
           style: const TextStyle(fontSize: 16),
         ),
       ),
     );
   }
 
-  Widget _buildImagePicker() {
+  Widget _buildImagePicker({Key? key}) {
     return InkWell(
+      key: key,
       onTap: _pickImage,
       child: Container(
         width: double.infinity,
@@ -408,12 +497,38 @@ class _AddStaffFormState extends State<AddStaffForm> {
         ],
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (_selectedStaff != null)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue, width: 1.5),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.edit, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Mode Edit Staff',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               if (_errorMessage != null)
                 Container(
                   width: double.infinity,
@@ -435,6 +550,7 @@ class _AddStaffFormState extends State<AddStaffForm> {
                 label: 'Nama',
                 controller: _nameController,
                 validator: (v) => (v?.isEmpty ?? true) ? 'Harus diisi' : null,
+                key: _nameFieldKey,
               ),
               Row(
                 children: [
@@ -478,13 +594,16 @@ class _AddStaffFormState extends State<AddStaffForm> {
                 value: _selectedRole,
                 validator: (v) => v == null ? 'Harus dipilih' : null,
                 onChanged: (v) => setState(() => _selectedRole = v),
+                key: _roleFieldKey,
               ),
               _buildFormField(
                 label: 'Bio',
                 controller: _bioController,
+                validator: (v) => (v?.isEmpty ?? true) ? 'Harus diisi' : null,
+                key: _bioFieldKey,
               ),
               const SizedBox(height: 20),
-              _buildImagePicker(),
+              _buildImagePicker(key: _coverFieldKey),
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 icon: _isLoading

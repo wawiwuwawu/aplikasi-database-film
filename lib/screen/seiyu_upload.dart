@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
+import 'dart:async';
 import '../service/seiyu_service.dart';
 import '../model/seiyu_model.dart';
 
@@ -14,6 +15,10 @@ class AddSeiyuForm extends StatefulWidget {
 
 class _AddSeiyuFormState extends State<AddSeiyuForm> {
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
+  final _nameFieldKey = GlobalKey();
+  final _bioFieldKey = GlobalKey();
+  final _coverFieldKey = GlobalKey();
   final _apiService = SeiyuApiService();
   final _picker = ImagePicker();
 
@@ -31,6 +36,7 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
   String? _errorMessage;
   final List<Seiyu> _searchResults = [];
   Seiyu? _selectedSeiyu;
+  Timer? _debounce;
 
   @override
   void dispose() {
@@ -41,6 +47,8 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
     _instagramController.dispose();
     _twitterController.dispose();
     _youtubeController.dispose();
+    _searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -61,7 +69,6 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
       _searchResults.clear();
     });
 
@@ -69,7 +76,7 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
       final results = await _apiService.searchSeiyuByName(_searchController.text);
 
       if (results.isEmpty) {
-        setState(() => _errorMessage = 'Seiyu tidak ditemukan');
+        // Tidak set errorMessage, biar hanya snackbar yang muncul
         return;
       }
 
@@ -77,14 +84,14 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
         _searchResults.addAll(results);
       });
     } catch (e) {
-      setState(() => _errorMessage = 'Terjadi kesalahan saat mencari seiyu: ${e.toString()}');
+      // Tidak set errorMessage, biar hanya snackbar yang muncul
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
     void _selectSeiyu(Seiyu seiyu) {
-    if (seiyu.id == null || seiyu.name.isEmpty) {
+    if (seiyu.name.isEmpty) {
       setState(() => _errorMessage = 'Data seiyu tidak valid');
       return;
     }
@@ -104,7 +111,7 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
   }
 
   Future<void> _deleteSeiyu() async {
-    if (_selectedSeiyu == null || _selectedSeiyu!.id == null) {
+    if (_selectedSeiyu == null) {
       setState(() => _errorMessage = 'Seiyu tidak valid untuk dihapus');
       return;
     }
@@ -115,7 +122,7 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
     });
 
     try {
-      await _apiService.deleteSeiyu(_selectedSeiyu!.id!);
+      await _apiService.deleteSeiyu(_selectedSeiyu?.id ?? 0);
       _resetForm();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Seiyu berhasil dihapus!')),
@@ -171,7 +178,13 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
   }
 
   Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate() || (_selectedSeiyu == null && _coverImage == null)) {
+      if (_selectedSeiyu == null && _coverImage == null) {
+        setState(() => _errorMessage = 'Cover wajib dipilih untuk seiyu baru');
+      }
+      await _scrollToFirstError();
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -181,9 +194,9 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
     try {
       if (_selectedSeiyu != null) {
         await _apiService.updateSeiyu(
-          id: _selectedSeiyu!.id!,
+          id: _selectedSeiyu?.id ?? 0,
           seiyu: Seiyu(
-            id: _selectedSeiyu!.id!,
+            id: _selectedSeiyu?.id ?? 0,
             name: _nameController.text.trim(),
             birthday: _birthdateController.text.trim(),
             bio: _bioController.text.trim(),
@@ -234,6 +247,33 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
     }
   }
 
+  Future<void> _scrollToFirstError() async {
+    if (_nameController.text.isEmpty) {
+      await _ensureVisible(_nameFieldKey);
+      return;
+    }
+    if (_bioController.text.isEmpty) {
+      await _ensureVisible(_bioFieldKey);
+      return;
+    }
+    if (_selectedSeiyu == null && _coverImage == null) {
+      await _ensureVisible(_coverFieldKey);
+      return;
+    }
+  }
+
+  Future<void> _ensureVisible(GlobalKey key) async {
+    final context = key.currentContext;
+    if (context != null) {
+      await Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.1,
+      );
+    }
+  }
+
   void _resetForm() {
     setState(() {
       _formKey.currentState?.reset();
@@ -262,11 +302,39 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
             Expanded(
               child: TextFormField(
                 controller: _searchController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Cari Seiyu (untuk edit)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.search),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() {
+                              _searchController.clear();
+                              _searchResults.clear();
+                              _errorMessage = null;
+                            });
+                          },
+                        )
+                      : null,
                 ),
+                onChanged: (value) {
+                  if (_debounce?.isActive ?? false) _debounce!.cancel();
+                  setState(() {}); // Untuk update suffixIcon
+                  if (value.isEmpty) {
+                    setState(() {
+                      _searchResults.clear();
+                      _errorMessage = null;
+                    });
+                    return;
+                  }
+                  _debounce = Timer(const Duration(milliseconds: 1000), () {
+                    if (value.isNotEmpty) {
+                      _searchSeiyu();
+                    }
+                  });
+                },
               ),
             ),
             const SizedBox(width: 8),
@@ -291,6 +359,22 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
   }
 
     Widget _buildSearchResults() {
+    if (_searchController.text.isNotEmpty && !_isLoading && _searchResults.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).removeCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Seiyu tidak ditemukan'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.only(bottom: 80, left: 16, right: 16),
+            ),
+          );
+        }
+      });
+    }
     if (_searchResults.isEmpty) return const SizedBox();
 
     return Container(
@@ -337,10 +421,12 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
     bool readOnly = false,
     VoidCallback? onTap,
     VoidCallback? onClear,
+    Key? key,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextFormField(
+        key: key,
         controller: controller,
         readOnly: readOnly,
         decoration: InputDecoration(
@@ -368,24 +454,27 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
   }
 
     Widget _buildIdField() {
+    if (_selectedSeiyu == null) return const SizedBox();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
-          'ID Seiyu: ${_selectedSeiyu?.id.toString() ?? 'ID belum tersedia'}',
+          'ID Seiyu: ${_selectedSeiyu!.id}',
           style: const TextStyle(fontSize: 16),
         ),
       ),
     );
   }
 
-    Widget _buildImagePicker() {
+    Widget _buildImagePicker({Key? key}) {
     return InkWell(
+      key: key,
       onTap: _pickImage,
       child: Container(
         width: double.infinity,
@@ -428,12 +517,38 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
         ],
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (_selectedSeiyu != null)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue, width: 1.5),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.edit, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Mode Edit Seiyu',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               if (_errorMessage != null)
                 Container(
                   width: double.infinity,
@@ -455,6 +570,7 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
                 label: 'Nama',
                 controller: _nameController,
                 validator: (v) => (v?.isEmpty ?? true) ? 'Harus diisi' : null,
+                key: _nameFieldKey,
               ),
               Row(
                 children: [
@@ -488,6 +604,8 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
               _buildFormField(
                 label: 'Bio',
                 controller: _bioController,
+                validator: (v) => (v?.isEmpty ?? true) ? 'Harus diisi' : null,
+                key: _bioFieldKey,
               ),
               _buildFormField(
                 label: 'Website',
@@ -510,7 +628,7 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
                 validator: (v) => _validateOptionalUrl(v, 'youtube'),
               ),
               const SizedBox(height: 20),
-              _buildImagePicker(),
+              _buildImagePicker(key: _coverFieldKey),
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 icon: _isLoading

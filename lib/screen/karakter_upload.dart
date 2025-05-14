@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:async';
 import '../service/karakter_service.dart';
 import '../model/karakter_model.dart';
 
@@ -13,6 +14,10 @@ class AddCharacterForm extends StatefulWidget {
 
 class _AddCharacterFormState extends State<AddCharacterForm> {
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
+  final _namaFieldKey = GlobalKey();
+  final _bioFieldKey = GlobalKey();
+  final _coverFieldKey = GlobalKey();
   final _namaController = TextEditingController();
   final _bioController = TextEditingController();
   final _searchController = TextEditingController();
@@ -24,12 +29,14 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
   String? _errorMessage;
   final List<Karakter> _searchResults = [];
   Karakter? _selectedKarakter;
+  Timer? _debounce;
 
   @override
   void dispose() {
     _namaController.dispose();
     _bioController.dispose();
     _searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -50,7 +57,6 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
       _searchResults.clear();
     });
 
@@ -58,7 +64,6 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
       final results = await _apiService.searchKarakterByName(_searchController.text);
 
       if (results.isEmpty) {
-        setState(() => _errorMessage = 'Karakter tidak ditemukan');
         return;
       }
 
@@ -66,7 +71,7 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
         _searchResults.addAll(results);
       });
     } catch (e) {
-      setState(() => _errorMessage = 'Terjadi kesalahan saat mencari karakter: ${e.toString()}');
+      return;
     } finally {
       setState(() => _isLoading = false);
     }
@@ -83,10 +88,11 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
   }
 
   Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    if (_selectedKarakter == null && _coverImage == null) {
-      setState(() => _errorMessage = 'Cover wajib dipilih untuk karakter baru');
+    if (!_formKey.currentState!.validate() || (_selectedKarakter == null && _coverImage == null)) {
+      if (_selectedKarakter == null && _coverImage == null) {
+        setState(() => _errorMessage = 'Cover wajib dipilih untuk karakter baru');
+      }
+      await _scrollToFirstError();
       return;
     }
 
@@ -197,6 +203,33 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
     });
   }
 
+  Future<void> _scrollToFirstError() async {
+    if (_namaController.text.isEmpty) {
+      await _ensureVisible(_namaFieldKey);
+      return;
+    }
+    if (_bioController.text.isEmpty) {
+      await _ensureVisible(_bioFieldKey);
+      return;
+    }
+    if (_selectedKarakter == null && _coverImage == null) {
+      await _ensureVisible(_coverFieldKey);
+      return;
+    }
+  }
+
+  Future<void> _ensureVisible(GlobalKey key) async {
+    final context = key.currentContext;
+    if (context != null) {
+      await Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.1,
+      );
+    }
+  }
+
   Widget _buildSearchField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,11 +239,39 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
             Expanded(
               child: TextFormField(
                 controller: _searchController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Cari Karakter (untuk edit)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.search),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() {
+                              _searchController.clear();
+                              _searchResults.clear();
+                              _errorMessage = null;
+                            });
+                          },
+                        )
+                      : null,
                 ),
+                onChanged: (value) {
+                  if (_debounce?.isActive ?? false) _debounce!.cancel();
+                  setState(() {}); // Untuk update suffixIcon
+                  if (value.isEmpty) {
+                    setState(() {
+                      _searchResults.clear();
+                      _errorMessage = null;
+                    });
+                    return;
+                  }
+                  _debounce = Timer(const Duration(milliseconds: 1000), () {
+                    if (value.isNotEmpty) {
+                      _searchKarakter();
+                    }
+                  });
+                },
               ),
             ),
             const SizedBox(width: 8),
@@ -235,6 +296,22 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
   }
 
   Widget _buildSearchResults() {
+    if (_searchController.text.isNotEmpty && !_isLoading && _searchResults.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).removeCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Karakter tidak ditemukan'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.only(bottom: 80, left: 16, right: 16),
+            ),
+          );
+        }
+      });
+    }
     if (_searchResults.isEmpty) return const SizedBox();
 
     return Container(
@@ -278,10 +355,12 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
     required String label,
     required TextEditingController controller,
     String? Function(String?)? validator,
+    Key? key,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextFormField(
+        key: key,
         controller: controller,
         decoration: InputDecoration(
           labelText: label,
@@ -293,24 +372,27 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
   }
 
   Widget _buildIdField() {
+    if (_selectedKarakter == null) return const SizedBox();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
-          'ID Karakter: ${_selectedKarakter?.id.toString() ?? 'ID belum tersedia'}',
+          'ID Karakter: ${_selectedKarakter!.id}',
           style: const TextStyle(fontSize: 16),
         ),
       ),
     );
   }
 
-  Widget _buildImagePicker() {
+  Widget _buildImagePicker({Key? key}) {
     return InkWell(
+      key: key,
       onTap: _pickImage,
       child: Container(
         width: double.infinity,
@@ -353,12 +435,38 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
         ],
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (_selectedKarakter != null)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue, width: 1.5),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.edit, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Mode Edit Karakter',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               if (_errorMessage != null)
                 Container(
                   width: double.infinity,
@@ -380,14 +488,16 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
                 label: 'Nama',
                 controller: _namaController,
                 validator: (v) => (v?.isEmpty ?? true) ? 'Harus diisi' : null,
+                key: _namaFieldKey,
               ),
               _buildFormField(
                 label: 'Bio',
                 controller: _bioController,
                 validator: (v) => (v?.isEmpty ?? true) ? 'Harus diisi' : null,
+                key: _bioFieldKey,
               ),
               const SizedBox(height: 20),
-              _buildImagePicker(),
+              _buildImagePicker(key: _coverFieldKey),
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 icon: _isLoading

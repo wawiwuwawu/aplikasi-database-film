@@ -2,6 +2,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:http_parser/http_parser.dart';
 
 import '../model/movie_model.dart';
 
@@ -54,46 +55,132 @@ class MovieApiService {
   }
 
   Future<void> uploadMovie({
-    required Movie movie,
+    required String judul,
+    required String sinopsis,
+    required int tahunRilis,
+    required String type,
+    required int episode,
+    required int durasi,
+    required String rating,
+    required List<int> genreIds,
+    required List<int> themeIds,
+    required List<int> staffIds,
+    required List<int> seiyuIds,
+    required List<int> karakterIds,
     required File coverImage,
   }) async {
-    final uri = Uri.parse('$_baseUrl/upload');
-    
-    var request = http.MultipartRequest('POST', uri);
+    final uri = Uri.parse(_baseUrl);
+    final request = http.MultipartRequest('POST', uri)
+      ..headers['Accept'] = 'application/json'
+      ..fields['judul'] = judul
+      ..fields['sinopsis'] = sinopsis
+      ..fields['tahun_rilis'] = tahunRilis.toString()
+      ..fields['type'] = type
+      ..fields['episode'] = episode.toString()
+      ..fields['durasi'] = durasi.toString()
+      ..fields['rating'] = rating;
 
-    final genresJson = json.encode(movie.genres.map((g) => g.id).toList());
-    final themesJson = json.encode(movie.themes.map((t) => t.id).toList());
-    final staffsJson = json.encode(movie.staffs.map((s) => s.toJson()).toList());
-    final seiyusJson = json.encode(movie.seiyus.map((s) => s.toJson()).toList());
-    final karaktersJson = json.encode(movie.karakters.map((k) => k.toJson()).toList());
-
-    request.fields.addAll({
-      'judul': movie.judul,
-      'sinopsis': movie.sinopsis,
-      'tahun_rilis': movie.tahunRilis.toString(),
-      'type': movie.type,
-      'episode': movie.episode.toString(),
-      'durasi': movie.durasi.toString(),
-      'rating': movie.rating,
-      'genres': genresJson,
-      'themes': themesJson,
-      'staffs': staffsJson,
-      'seiyus': seiyusJson,
-      'karakters': karaktersJson,
-    });
+    // Kirim genreIds, themeIds, staffIds, seiyuIds, karakterIds sebagai array id dengan index
+    for (var i = 0; i < genreIds.length; i++) {
+      request.fields['genreIds[$i]'] = genreIds[i].toString();
+    }
+    for (var i = 0; i < themeIds.length; i++) {
+      request.fields['themeIds[$i]'] = themeIds[i].toString();
+    }
+    for (var i = 0; i < staffIds.length; i++) {
+      request.fields['staffIds[$i]'] = staffIds[i].toString();
+    }
+    for (var i = 0; i < seiyuIds.length; i++) {
+      request.fields['seiyuIds[$i]'] = seiyuIds[i].toString();
+    }
+    for (var i = 0; i < karakterIds.length; i++) {
+      request.fields['karakterIds[$i]'] = karakterIds[i].toString();
+    }
 
     request.files.add(
       await http.MultipartFile.fromPath(
-        'cover', 
+        'file',
         coverImage.path,
+        contentType: MediaType(
+          'image',
+          coverImage.path.toLowerCase().endsWith('.png') ? 'png' : 'jpeg',
+        ),
       ),
     );
 
-    final response = await request.send();
-    final responseBody = await response.stream.bytesToString();
+    final streamedResponse = await request.send();
+    final responseBody = await streamedResponse.stream.bytesToString();
 
-    if (response.statusCode != 200) {
-      throw Exception('Upload failed: ${response.statusCode} - $responseBody');
+    if (streamedResponse.statusCode < 200 || streamedResponse.statusCode >= 300) {
+      throw Exception('Upload failed: \\${streamedResponse.statusCode} - $responseBody');
+    }
+  }
+
+  Future<void> updateMovie({
+    required int id,
+    required String judul,
+    required String sinopsis,
+    required int tahunRilis,
+    required String type,
+    required int episode,
+    required int durasi,
+    required String rating,
+    required List<int> genreIds,
+    required List<int> themeIds,
+    required List<int> staffIds,
+    required List<int> seiyuIds,
+    required List<int> karakterIds,
+    File? coverImage,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/$id');
+    final request = http.MultipartRequest('PUT', uri)
+      ..headers['Accept'] = 'application/json'
+      ..fields['judul'] = judul
+      ..fields['sinopsis'] = sinopsis
+      ..fields['tahun_rilis'] = tahunRilis.toString()
+      ..fields['type'] = type
+      ..fields['episode'] = episode.toString()
+      ..fields['durasi'] = durasi.toString()
+      ..fields['rating'] = rating;
+    for (var i = 0; i < genreIds.length; i++) {
+      request.fields['genreIds[$i]'] = genreIds[i].toString();
+    }
+    for (var i = 0; i < themeIds.length; i++) {
+      request.fields['themeIds[$i]'] = themeIds[i].toString();
+    }
+    for (var i = 0; i < staffIds.length; i++) {
+      request.fields['staffIds[$i]'] = staffIds[i].toString();
+    }
+    for (var i = 0; i < seiyuIds.length; i++) {
+      request.fields['seiyuIds[$i]'] = seiyuIds[i].toString();
+    }
+    for (var i = 0; i < karakterIds.length; i++) {
+      request.fields['karakterIds[$i]'] = karakterIds[i].toString();
+    }
+    if (coverImage != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          coverImage.path,
+          contentType: MediaType(
+            'image',
+            coverImage.path.toLowerCase().endsWith('.png') ? 'png' : 'jpeg',
+          ),
+        ),
+      );
+    }
+    final streamedResponse = await request.send();
+    final responseBody = await streamedResponse.stream.bytesToString();
+    if (streamedResponse.statusCode < 200 || streamedResponse.statusCode >= 300) {
+      throw Exception('Update failed: \\${streamedResponse.statusCode} - $responseBody');
+    }
+  }
+
+  Future<void> deleteMovie(int id) async {
+    final uri = Uri.parse('$_baseUrl/$id');
+    final response = await http.delete(uri, headers: {'Accept': 'application/json'});
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Delete failed: \\${response.statusCode} - ${response.body}');
     }
   }
 
