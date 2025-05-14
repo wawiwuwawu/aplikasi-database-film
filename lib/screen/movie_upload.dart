@@ -648,8 +648,7 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
         Text(label),
         ...items.map((item) => (item as dynamic).build(context, onRemove: () => setState(() => items.remove(item)))),
         if (showAddButton)
-          ElevatedButton.icon(
-            onPressed: () {
+          ElevatedButton.icon(            onPressed: () {
               setState(() {
                 _searchStaffController.clear();
                 _searchStaffResults.clear();
@@ -668,6 +667,9 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                     final staffForm = StaffForm();
                     staffForm.selectedStaff = selectedStaff;
                     _staffs.add(staffForm);
+                    // Clear search after selection
+                    _searchStaffController.clear();
+                    _searchStaffResults.clear();
                   });
                 }
                 FocusScope.of(context).unfocus();
@@ -792,22 +794,34 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                 children: [
                   Expanded(
                     child: InkWell(
-                      onTap: () async {
-                        await showDialog(
+                      onTap: () async {                        // Reset search before showing dialog
+                        setState(() {
+                          _searchSeiyuController.clear();
+                          _searchSeiyuResults.clear();
+                          _isSearchingSeiyu = false;
+                        });
+                        
+                        final selectedSeiyu = await showDialog<seiyu_model.Seiyu>(
                           context: context,
                           builder: (context) => SizedBox(
                             width: MediaQuery.of(context).size.width * 0.9,
                             height: MediaQuery.of(context).size.height * 0.7,
                             child: _buildSeiyuSearchDialog(
                               onSelected: (seiyu) {
-                                setState(() {
-                                  pair.seiyu = seiyu;
-                                });
+                                Navigator.pop(context, seiyu);
                               },
                             ),
                           ),
                         );
-                        FocusScope.of(context).unfocus(); // unfocus setelah pilih seiyu
+                        if (selectedSeiyu != null) {
+                          setState(() {
+                            pair.seiyu = selectedSeiyu;
+                            // Clear search after selection
+                            _searchSeiyuController.clear();
+                            _searchSeiyuResults.clear();
+                          });
+                        }
+                        FocusScope.of(context).unfocus();
                       },
                       child: _buildPairCard(
                         label: pair.seiyu != null ? pair.seiyu!.name : 'Pilih Seiyu',
@@ -818,22 +832,34 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                   const SizedBox(width: 8),
                   Expanded(
                     child: InkWell(
-                      onTap: () async {
-                        await showDialog(
+                      onTap: () async {                        // Reset search before showing dialog
+                        setState(() {
+                          _searchKarakterController.clear();
+                          _searchKarakterResults.clear();
+                          _isSearchingKarakter = false;
+                        });
+                        
+                        final selectedKarakter = await showDialog<karakter_model.Karakter>(
                           context: context,
                           builder: (context) => SizedBox(
                             width: MediaQuery.of(context).size.width * 0.9,
                             height: MediaQuery.of(context).size.height * 0.7,
                             child: _buildKarakterSearchDialog(
                               onSelected: (karakter) {
-                                setState(() {
-                                  pair.karakter = karakter;
-                                });
+                                Navigator.pop(context, karakter);
                               },
                             ),
                           ),
                         );
-                        FocusScope.of(context).unfocus(); // unfocus setelah pilih karakter
+                        if (selectedKarakter != null) {
+                          setState(() {
+                            pair.karakter = selectedKarakter;
+                            // Clear search after selection
+                            _searchKarakterController.clear();
+                            _searchKarakterResults.clear();
+                          });
+                        }
+                        FocusScope.of(context).unfocus();
                       },
                       child: _buildPairCard(
                         label: pair.karakter != null ? pair.karakter!.nama : 'Pilih Karakter',
@@ -854,7 +880,7 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                 setState(() {
                   _seiyuKarakterPairs.add(SeiyuKarakterPairForm());
                 });
-                FocusScope.of(context).unfocus(); // unfocus setelah tambah pasangan
+                FocusScope.of(context).unfocus();
               },
               icon: const Icon(Icons.add),
               label: const Text('Tambah Pasangan Seiyu & Karakter'),
@@ -1300,8 +1326,7 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Expanded(
+                  const SizedBox(height: 16),                  Expanded(
                     child: _isSearchingKarakter
                         ? const Center(child: CircularProgressIndicator())
                         : _searchKarakterController.text.isEmpty
@@ -1331,16 +1356,12 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                                         subtitle: Text(karakter.bio ?? 'Tidak ada bio'),
                                         onTap: () {
                                           FocusScope.of(context).unfocus();
-                                          Navigator.pop(context);
-                                          Future.delayed(const Duration(milliseconds: 100), () {
-                                            if (mounted) {
-                                              setState(() {
-                                                onSelected(karakter);
-                                                _searchKarakterController.clear();
-                                                _isSearchingKarakter = false;
-                                              });
-                                            }
+                                          // Clear search controller here to ensure UI refreshes properly
+                                          setModalState(() {
+                                            _searchKarakterController.clear();
+                                            _searchKarakterResults.clear();
                                           });
+                                          Navigator.pop(context, karakter);
                                         },
                                       );
                                     },
@@ -1432,7 +1453,6 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
-                                  strokeWidth: 2,
                                   color: Colors.white,
                                 ),
                               )
@@ -1440,8 +1460,7 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Expanded(
+                  const SizedBox(height: 16),                  Expanded(
                     child: _isSearchingSeiyu
                         ? const Center(child: CircularProgressIndicator())
                         : _searchSeiyuController.text.isEmpty
@@ -1471,6 +1490,11 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                                         subtitle: Text(seiyu.bio ?? 'Tidak ada bio'),
                                         onTap: () {
                                           FocusScope.of(context).unfocus();
+                                          // Clear search controller here to ensure UI refreshes properly
+                                          setModalState(() {
+                                            _searchSeiyuController.clear();
+                                            _searchSeiyuResults.clear();
+                                          });
                                           Navigator.pop(context, seiyu);
                                         },
                                       );
@@ -1583,7 +1607,6 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
       ),
     );
   }
-
   Widget _buildStaffSearchResults(void Function(void Function()) setModalState) {
     if (_isSearchingStaff) {
       return const Center(child: CircularProgressIndicator());
@@ -1615,9 +1638,13 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                 )
               : const Icon(Icons.person, size: 50),
           title: Text(staff.name),
-          subtitle: Text(staff.bio ?? 'Tidak ada bio'),
-          onTap: () {
+          subtitle: Text(staff.bio ?? 'Tidak ada bio'),          onTap: () {
             FocusScope.of(context).unfocus();
+            // Clear search controller here to ensure UI refreshes properly
+            setModalState(() {
+              _searchStaffController.clear();
+              _searchStaffResults.clear();
+            });
             Navigator.pop(context, staff);
           },
         );
