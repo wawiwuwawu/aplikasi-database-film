@@ -1,3 +1,6 @@
+// File ini telah dipindahkan ke: screen/upload/karakter_upload.dart
+// Silakan update semua import yang mengarah ke file ini.
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';

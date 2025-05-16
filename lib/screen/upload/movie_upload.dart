@@ -1,19 +1,16 @@
-// File ini telah dipindahkan ke: screen/upload/movie_upload.dart
-// Silakan update semua import yang mengarah ke file ini.
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:numberpicker/numberpicker.dart';
-import '../service/karakter_service.dart';
-import '../model/karakter_model.dart' as karakter_model;
-import '../service/seiyu_service.dart';
-import '../model/seiyu_model.dart' as seiyu_model;
-import '../service/staff_service.dart';
-import '../model/staff_model.dart' as staff_model;
-import '../model/movie_model.dart' as movie_model;
-import '../service/movie_service.dart';
+import '../../service/karakter_service.dart';
+import '../../model/karakter_model.dart' as karakter_model;
+import '../../service/seiyu_service.dart';
+import '../../model/seiyu_model.dart' as seiyu_model;
+import '../../service/staff_service.dart';
+import '../../model/staff_model.dart' as staff_model;
+import '../../model/movie_model.dart' as movie_model;
+import '../../service/movie_service.dart';
 
 class MovieFormPage extends StatefulWidget {
   const MovieFormPage({super.key});
