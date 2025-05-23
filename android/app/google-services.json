@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "201823022625",
+    "project_id": "user-database-film-movie-pmo",
+    "storage_bucket": "user-database-film-movie-pmo.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:201823022625:android:b96d3cdb48f550a841fd60",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "201823022625-nbepo4tvh65ne5bha6a6maissjsocmpc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAknOJotw7EBFVynIon4v2BhHGTaj0h4-w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "201823022625-nbepo4tvh65ne5bha6a6maissjsocmpc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -296,7 +296,7 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
   }
 
   Widget _buildSearchResults() {
-    if (_searchController.text.isNotEmpty && !_isLoading && _searchResults.isEmpty) {
+    if (_searchController.text.isNotEmpty && !_isLoading && _searchResults.isEmpty && (_debounce == null || !_debounce!.isActive)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ScaffoldMessenger.of(context).removeCurrentSnackBar();

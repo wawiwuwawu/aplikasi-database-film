@@ -45,4 +45,9 @@ class PreferencesService {
   static Future<void> clearToken() async {
     await _preferences?.remove('token');
   }
+
+  /// Hapus cache movie dari SharedPreferences
+  static Future<void> clearMovieCache() async {
+    await _preferences?.remove('cached_movies');
+  }
 }

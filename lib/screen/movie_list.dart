@@ -25,6 +25,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   String _searchQuery = '';
   Timer? _debounce;
   Credentials? _credentials;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -72,7 +73,25 @@ class _MovieListScreenState extends State<MovieListScreen> {
     }
   }
 
-  Future<void> _loadMovies() async {
+  Future<void> _loadMovies({bool fromRefresh = false}) async {
+    setState(() {
+      _isLoading = true;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    if (!fromRefresh) {
+      // Try loading from cache first
+      final cached = prefs.getString('cached_movies');
+      if (cached != null && cached.isNotEmpty) {
+        final cachedMovies = Movie.decodeList(cached);
+        if (cachedMovies.isNotEmpty) {
+          setState(() {
+            _movies
+              ..clear()
+              ..addAll(cachedMovies);
+          });
+        }
+      }
+    }
     try {
       final movies = await _apiService.getMovies(query: '');
       setState(() {
@@ -80,8 +99,20 @@ class _MovieListScreenState extends State<MovieListScreen> {
           ..clear()
           ..addAll(movies);
       });
+      // Update cache
+      await prefs.setString('cached_movies', Movie.encodeList(movies));
     } catch (e) {
       print('Error saat memuat film: $e');
+      if (_movies.isEmpty) {
+        // Show error if nothing to display
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat data film.')),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -152,30 +183,32 @@ class _MovieListScreenState extends State<MovieListScreen> {
         children: [
           // Daftar utama
           RefreshIndicator(
-            onRefresh: _loadMovies,
-            child: _movies.isEmpty
-                ? Center(
-                    child: Text(
-                      _searchController.text.isEmpty
-                          ? 'Tidak ada film tersedia'
-                          : 'Tidak ada hasil ditemukan',
-                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                    ),
-                  )
-                : GridView.builder(
-                    padding: const EdgeInsets.all(8),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.6,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                    ),
-                    itemCount: _movies.length,
-                    itemBuilder: (context, index) => _AnimatedMovieCard(
-                      index: index,
-                      child: _buildMovieCard(_movies[index]),
-                    ),
-                  ),
+            onRefresh: () => _loadMovies(fromRefresh: true),
+            child: _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : _movies.isEmpty
+                    ? Center(
+                        child: Text(
+                          _searchController.text.isEmpty
+                              ? 'Tidak ada film tersedia'
+                              : 'Tidak ada hasil ditemukan',
+                          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                        ),
+                      )
+                    : GridView.builder(
+                        padding: const EdgeInsets.all(8),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.6,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                        ),
+                        itemCount: _movies.length,
+                        itemBuilder: (context, index) => _AnimatedMovieCard(
+                          index: index,
+                          child: _buildMovieCard(_movies[index]),
+                        ),
+                      ),
           ),
           if (_suggestions.isNotEmpty)
             Positioned(

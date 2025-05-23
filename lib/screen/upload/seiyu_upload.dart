@@ -359,7 +359,8 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
   }
 
     Widget _buildSearchResults() {
-    if (_searchController.text.isNotEmpty && !_isLoading && _searchResults.isEmpty) {
+    // Tampilkan snackbar error hanya jika pencarian sudah selesai dan user tidak sedang mengetik
+    if (_searchController.text.isNotEmpty && !_isLoading && _searchResults.isEmpty && (_debounce == null || !_debounce!.isActive)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ScaffoldMessenger.of(context).removeCurrentSnackBar();

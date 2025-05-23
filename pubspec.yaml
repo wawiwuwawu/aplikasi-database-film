@@ -41,18 +41,14 @@ dependencies:
   cached_network_image: ^3.3.0
   intl: ^0.18.1
   numberpicker: ^2.1.1
+  firebase_core: ^3.13.1
+  flutter_markdown: ^0.7.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-    
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  flutter_native_splash: ^2.3.10
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -94,3 +90,9 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/main_logo.png
+  android: true
+  ios: true

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class Movie {
   final int id;
   final String judul;
@@ -84,7 +86,7 @@ class Movie {
     );
   }
 
-    Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'judul': judul,
@@ -102,6 +104,22 @@ class Movie {
       'karakters': karakters.map((k) => k.toJson()).toList(),
     };
   }
+
+  // Encode a list of Movie objects to a JSON string
+  static String encodeList(List<Movie> movies) {
+    return jsonEncode(movies.map((m) => m.toJson()).toList());
+  }
+
+  // Decode a JSON string to a list of Movie objects
+  static List<Movie> decodeList(String moviesJson) {
+    if (moviesJson.isEmpty) return [];
+    try {
+      final List<dynamic> decoded = jsonDecode(moviesJson);
+      return decoded.map((e) => Movie.fromJson(e)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
 }
 
 class Genre {
@@ -117,7 +135,7 @@ class Genre {
     );
   }
 
-    Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'nama': nama,
@@ -138,7 +156,7 @@ class ThemeMovie {
     );
   }
 
-    Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'nama': nama,
@@ -168,7 +186,7 @@ class Staff {
     );
   }
 
-    Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
@@ -205,7 +223,7 @@ class Seiyu {
     );
   }
 
-    Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
@@ -229,7 +247,7 @@ class SeiyuKarakter {
     );
   }
 
-    Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'nama': nama,
@@ -248,7 +266,7 @@ class SeiyuMovie {
     );
   }
 
-    Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'karakter_id': karakterId,
     };
@@ -274,7 +292,7 @@ class Karakter {
     );
   }
 
-    Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'nama': nama,

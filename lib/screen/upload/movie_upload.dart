@@ -448,7 +448,8 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
   }
 
   Widget _buildSearchMovieResults() {
-    if (_searchMovieController.text.isNotEmpty && !_isSearchingMovie && _searchMovieResults.isEmpty) {
+    // Tampilkan snackbar error hanya jika pencarian sudah selesai dan user tidak sedang mengetik
+    if (_searchMovieController.text.isNotEmpty && !_isSearchingMovie && _searchMovieResults.isEmpty && (_debounceMovie == null || !_debounceMovie!.isActive)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ScaffoldMessenger.of(context).removeCurrentSnackBar();
