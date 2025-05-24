@@ -26,10 +26,12 @@ class _MovieListScreenState extends State<MovieListScreen> {
   Timer? _debounce;
   Credentials? _credentials;
   bool _isLoading = false;
+  bool _hasLoadedFromCache = false;
 
   @override
   void initState() {
     super.initState();
+    _hasLoadedFromCache = false; // Reset agar cache selalu diprioritaskan saat kembali ke halaman
     _getCredentials();
     _loadMovies();
     _searchController.addListener(_onSearchChanged);
@@ -78,7 +80,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
       _isLoading = true;
     });
     final prefs = await SharedPreferences.getInstance();
-    if (!fromRefresh) {
+    if (!fromRefresh && !_hasLoadedFromCache) {
       // Try loading from cache first
       final cached = prefs.getString('cached_movies');
       if (cached != null && cached.isNotEmpty) {
@@ -89,27 +91,35 @@ class _MovieListScreenState extends State<MovieListScreen> {
               ..clear()
               ..addAll(cachedMovies);
           });
+          _hasLoadedFromCache = true;
         }
       }
     }
-    try {
-      final movies = await _apiService.getMovies(query: '');
-      setState(() {
-        _movies
-          ..clear()
-          ..addAll(movies);
-      });
-      // Update cache
-      await prefs.setString('cached_movies', Movie.encodeList(movies));
-    } catch (e) {
-      print('Error saat memuat film: $e');
-      if (_movies.isEmpty) {
-        // Show error if nothing to display
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat data film.')),
-        );
+    if (fromRefresh || !_hasLoadedFromCache) {
+      try {
+        final movies = await _apiService.getMovies(query: '');
+        setState(() {
+          _movies
+            ..clear()
+            ..addAll(movies);
+        });
+        // Update cache
+        await prefs.setString('cached_movies', Movie.encodeList(movies));
+        _hasLoadedFromCache = true;
+      } catch (e) {
+        print('Error saat memuat film: $e');
+        if (_movies.isEmpty) {
+          // Show error if nothing to display
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal memuat data film.')),
+          );
+        }
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
       }
-    } finally {
+    } else {
       setState(() {
         _isLoading = false;
       });
@@ -311,15 +321,39 @@ class _MovieListScreenState extends State<MovieListScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: CachedNetworkImage(
-                  imageUrl: movie.coverUrl,
-                  fit: BoxFit.cover,
-                  placeholder:
-                      (context, url) => Container(color: Colors.grey[200]),
-                  errorWidget: (context, url, error) => const Icon(Icons.error),
-                ),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: CachedNetworkImage(
+                      imageUrl: movie.coverUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      placeholder: (context, url) => Container(color: Colors.grey[200]),
+                      errorWidget: (context, url, error) => const Icon(Icons.error),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.85),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: _SaveButton(movie: movie, iconSize: 20),
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(
@@ -356,6 +390,79 @@ class _MovieListScreenState extends State<MovieListScreen> {
         ),
       ),
     );
+  }
+}
+
+class _SaveButton extends StatefulWidget {
+  final Movie movie;
+  final double iconSize;
+  const _SaveButton({required this.movie, this.iconSize = 24, Key? key}) : super(key: key);
+
+  @override
+  State<_SaveButton> createState() => _SaveButtonState();
+}
+
+class _SaveButtonState extends State<_SaveButton> {
+  String? _status;
+
+  final List<Map<String, dynamic>> _statusOptions = [
+    {'label': 'Disimpan', 'value': 'saved', 'icon': Icons.bookmark},
+    {'label': 'Ditonton', 'value': 'watching', 'icon': Icons.play_circle},
+    {'label': 'Sudah Ditonton', 'value': 'watched', 'icon': Icons.check_circle},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    IconData icon;
+    Color color;
+    switch (_status) {
+      case 'saved':
+        icon = Icons.bookmark;
+        color = Colors.blueAccent;
+        break;
+      case 'watching':
+        icon = Icons.play_circle;
+        color = Colors.orange;
+        break;
+      case 'watched':
+        icon = Icons.check_circle;
+        color = Colors.green;
+        break;
+      default:
+        icon = Icons.bookmark_border;
+        color = Colors.grey;
+    }
+    return PopupMenuButton<String>(
+      icon: Icon(icon, color: color, size: widget.iconSize),
+      tooltip: 'Setel status film',
+      constraints: const BoxConstraints(minWidth: 0, minHeight: 0), // Hilangkan padding default
+      padding: EdgeInsets.zero, // Hilangkan padding default
+      onSelected: (value) {
+        setState(() {
+          _status = value;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Status film: ' + _statusLabel(value)),
+            duration: const Duration(milliseconds: 800), // lebih cepat
+          ),
+        );
+      },
+      itemBuilder: (context) => _statusOptions.map((item) => PopupMenuItem<String>(
+        value: item['value'] as String,
+        child: Row(
+          children: [
+            Icon(item['icon'] as IconData, color: _status == item['value'] ? Theme.of(context).colorScheme.primary : Colors.grey, size: 20),
+            const SizedBox(width: 8),
+            Text(item['label'] as String),
+          ],
+        ),
+      )).toList(),
+    );
+  }
+
+  String _statusLabel(String value) {
+    return _statusOptions.firstWhere((item) => item['value'] == value)['label'] as String;
   }
 }
 
