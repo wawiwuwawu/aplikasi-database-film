@@ -10,7 +10,7 @@ class MovieApiService {
   static const String _baseUrl = 'https://api.wawunime.my.id/api/movie';
 
   Future<List<Movie>> getMovies({int page = 1, String? query}) async {
-  const String baseUrl = 'https://api.wawunime.my.id/api/movie/detail';
+  const String baseUrl = 'https://api.wawunime.my.id/api/movie';
   
   final uri = Uri.parse(baseUrl).replace(
     queryParameters: {
@@ -200,7 +200,6 @@ class MovieApiService {
 
     if (response.statusCode == 200) {
       final jsonData = json.decode(response.body);
-
       if (jsonData['data'] is List) {
         return (jsonData['data'] as List)
             .map((movieJson) => Movie.fromJson(movieJson))
@@ -208,6 +207,18 @@ class MovieApiService {
       } else {
         throw Exception('Invalid API response structure');
       }
+    } else if (response.statusCode == 404) {
+      // Cek jika error "Film tidak ditemukan", kembalikan list kosong
+      try {
+        final jsonData = json.decode(response.body);
+        if (jsonData is Map && jsonData['error'] == 'Film tidak ditemukan') {
+          return [];
+        }
+      } catch (_) {}
+      // Jika 404 tapi bukan error yang diharapkan, tetap lempar Exception
+      throw Exception(
+        'Failed to search movies: ${response.statusCode} - ${response.body}',
+      );
     } else {
       throw Exception(
         'Failed to search movies: ${response.statusCode} - ${response.body}',

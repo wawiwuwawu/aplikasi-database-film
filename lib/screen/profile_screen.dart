@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/screen/login_screen.dart';
 import 'package:flutter_application_1/service/preferences_service.dart';
-import 'package:flutter_application_1/service/user_credential.dart';
 import 'profile_detail_screen.dart';
 import 'about_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -83,6 +83,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 30),
             buildMenuItem(Icons.person_outline, "Profile"),
             buildMenuItem(Icons.error_outline, "About"),
+            buildMenuItem(Icons.help_outline, "FAQ"),
           ],
         ),
       ),
@@ -117,7 +118,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     );
                   }
-                : null,
+                : title == "FAQ"
+                    ? () async {
+                        // Membuka link FAQ di browser
+                        // Pastikan url_launcher sudah ada di pubspec.yaml
+                        final url = Uri.parse('https://web.wawunime.my.id/html/faq.html');
+                        // ignore: deprecated_member_use
+                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                      }
+                    : null,
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: EdgeInsets.all(16),

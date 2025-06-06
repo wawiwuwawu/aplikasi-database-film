@@ -64,12 +64,12 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Program Studi: [Nama Program Studi Anda]',
+              'Program Studi: Sistem Informasi',
               style: TextStyle(color: Colors.grey[700], fontSize: 14),
             ),
             const SizedBox(height: 8),
             Text(
-              'Universitas: [Nama Universitas Anda]',
+              'Universitas: Amikom Purwokerto',
               style: TextStyle(color: Colors.grey[700], fontSize: 14),
             ),
             const SizedBox(height: 40),

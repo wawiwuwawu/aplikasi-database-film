@@ -27,13 +27,14 @@ class _MovieListScreenState extends State<MovieListScreen> {
   Credentials? _credentials;
   bool _isLoading = false;
   bool _hasLoadedFromCache = false;
+  bool _serverOffline = false; // Tambahkan state
 
   @override
   void initState() {
     super.initState();
     _hasLoadedFromCache = false; // Reset agar cache selalu diprioritaskan saat kembali ke halaman
     _getCredentials();
-    _loadMovies();
+    _loadMovies(fromRefresh: true); // Selalu refresh dari server saat pertama kali buka
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -59,9 +60,14 @@ class _MovieListScreenState extends State<MovieListScreen> {
           ..clear()
           ..addAll(movies);
       });
-      print('Hasil pencarian: ${movies.length} film ditemukan');
+      print('Hasil pencarian: \\${movies.length} film ditemukan');
     } catch (e) {
-      print('Error saat mencari film: $e');
+      print('Error saat mencari film: \\${e}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mencari film. Server tidak merespons.')),
+        );
+      }
     }
   }
 
@@ -78,6 +84,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   Future<void> _loadMovies({bool fromRefresh = false}) async {
     setState(() {
       _isLoading = true;
+      if (fromRefresh) _serverOffline = false; // reset offline saat refresh
     });
     final prefs = await SharedPreferences.getInstance();
     if (!fromRefresh && !_hasLoadedFromCache) {
@@ -102,6 +109,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
           _movies
             ..clear()
             ..addAll(movies);
+          _serverOffline = false;
         });
         // Update cache
         await prefs.setString('cached_movies', Movie.encodeList(movies));
@@ -109,7 +117,11 @@ class _MovieListScreenState extends State<MovieListScreen> {
       } catch (e) {
         print('Error saat memuat film: $e');
         if (_movies.isEmpty) {
-          // Show error if nothing to display
+          setState(() {
+            _serverOffline = true;
+          });
+        }
+        if (_movies.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Gagal memuat data film.')),
           );
@@ -189,99 +201,124 @@ class _MovieListScreenState extends State<MovieListScreen> {
           ),
         ),
       ),
-      body: Stack(
-        children: [
-          // Daftar utama
-          RefreshIndicator(
-            onRefresh: () => _loadMovies(fromRefresh: true),
-            child: _isLoading
-                ? Center(child: CircularProgressIndicator())
-                : _movies.isEmpty
-                    ? Center(
-                        child: Text(
-                          _searchController.text.isEmpty
-                              ? 'Tidak ada film tersedia'
-                              : 'Tidak ada hasil ditemukan',
-                          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                        ),
-                      )
-                    : GridView.builder(
-                        padding: const EdgeInsets.all(8),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.6,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                        ),
-                        itemCount: _movies.length,
-                        itemBuilder: (context, index) => _AnimatedMovieCard(
-                          index: index,
-                          child: _buildMovieCard(_movies[index]),
-                        ),
+      body: _serverOffline
+          ? RefreshIndicator(
+              onRefresh: () => _loadMovies(fromRefresh: true),
+              child: ListView(
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.cloud_off, size: 48, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Server offline\nTarik ke bawah untuk mencoba lagi',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                          ),
+                        ],
                       ),
-          ),
-          if (_suggestions.isNotEmpty)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: MediaQuery.of(context).size.height * 0.25, // 1/4 layar
-                color: Colors.white,
-                child: ListView.builder(
-                  itemCount: _suggestions.length,
-                  itemBuilder: (context, index) {
-                    final movie = _suggestions[index];
-                    return _AnimatedMovieCard(
-                      index: index,
-                      child: ListTile(
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
-                            imageUrl: movie.coverUrl,
-                            width: 50,
-                            height: 75,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) =>
-                                Container(color: Colors.grey[200]),
-                            errorWidget: (context, url, error) =>
-                                const Icon(Icons.error),
-                          ),
-                        ),
-                        title: Text(
-                          movie.judul,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(
-                          '${movie.tahunRilis} • ${movie.type}',
-                          style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                        ),
-                        onTap: () {
-                          setState(() {
-                            _searchController.clear();
-                            _suggestions.clear();
-                          });
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  MovieDetailScreen(movie: movie),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : Stack(
+              children: [
+                // Daftar utama
+                RefreshIndicator(
+                  onRefresh: () => _loadMovies(fromRefresh: true),
+                  child: _isLoading
+                      ? Center(child: CircularProgressIndicator())
+                      : _movies.isEmpty
+                          ? Center(
+                              child: Text(
+                                _searchController.text.isEmpty
+                                    ? 'Tidak ada film tersedia'
+                                    : 'Tidak ada hasil ditemukan',
+                                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                              ),
+                            )
+                          : GridView.builder(
+                              padding: const EdgeInsets.all(8),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                childAspectRatio: 0.6,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                              ),
+                              itemCount: _movies.length,
+                              itemBuilder: (context, index) => _AnimatedMovieCard(
+                                index: index,
+                                child: _buildMovieCard(_movies[index]),
+                              ),
+                            ),
+                ),
+                if (_suggestions.isNotEmpty)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      height: MediaQuery.of(context).size.height * 0.25, // 1/4 layar
+                      color: Colors.white,
+                      child: ListView.builder(
+                        itemCount: _suggestions.length,
+                        itemBuilder: (context, index) {
+                          final movie = _suggestions[index];
+                          return _AnimatedMovieCard(
+                            index: index,
+                            child: ListTile(
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: CachedNetworkImage(
+                                  imageUrl: movie.coverUrl,
+                                  width: 50,
+                                  height: 75,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) =>
+                                      Container(color: Colors.grey[200]),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
+                                ),
+                              ),
+                              title: Text(
+                                movie.judul,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                '${movie.tahunRilis} • ${movie.type}',
+                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                              ),
+                              onTap: () {
+                                setState(() {
+                                  _searchController.clear();
+                                  _suggestions.clear();
+                                });
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        MovieDetailScreen(movie: movie),
+                                  ),
+                                );
+                              },
                             ),
                           );
                         },
                       ),
-                    );
-                  },
-                ),
-              ),
+                    ),
+                  ),
+              ],
             ),
-        ],
-      ),
       floatingActionButton:
           _credentials!.role == "customer"
               ? const SizedBox.shrink()
@@ -307,13 +344,31 @@ class _MovieListScreenState extends State<MovieListScreen> {
 
   Widget _buildMovieCard(Movie movie) {
     return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MovieDetailScreen(movie: movie),
-          ),
+      onTap: () async {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(child: CircularProgressIndicator()),
         );
+        try {
+          final detailMovie = await _apiService.getMovieDetail(movie.id);
+          if (mounted) {
+            Navigator.pop(context); // tutup loading
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MovieDetailScreen(movie: detailMovie),
+              ),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            Navigator.pop(context); // tutup loading
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Gagal memuat detail film.')),
+            );
+          }
+        }
       },
       child: Card(
         elevation: 4,

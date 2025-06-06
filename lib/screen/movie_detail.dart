@@ -14,6 +14,34 @@ class MovieDetailScreen extends StatefulWidget {
 
 class _MovieDetailScreenState extends State<MovieDetailScreen> {
   bool _isSynopsisExpanded = false;
+  bool _serverOffline = false;
+  late Future<Movie> _movieFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _serverOffline = false;
+    _movieFuture = _loadMovie();
+  }
+
+  Future<Movie> _loadMovie({bool fromRefresh = false}) async {
+    setState(() {
+      if (fromRefresh) _serverOffline = false;
+    });
+    try {
+      // Simulasi: movie detail sudah diterima via widget.movie, tidak fetch ulang
+      // Jika ingin fetch ulang dari API, ganti dengan service.getMovieDetail(widget.movie.id)
+      setState(() {
+        _serverOffline = false;
+      });
+      return widget.movie;
+    } catch (e) {
+      setState(() {
+        _serverOffline = true;
+      });
+      rethrow;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,26 +57,76 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
           },
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildCoverImage(movie.coverUrl),
-            const SizedBox(height: 20),
-            _buildBasicInfoSection(movie),
-            _buildSectionDivider(),
-            _buildListSection('Genres', movie.genres, (g) => g.nama),
-            _buildListSection('Themes', movie.themes, (t) => t.nama),
-            _buildSectionDivider(),
-            _buildStaffSection(movie.staffs),
-            _buildSectionDivider(),
-            _buildSeiyuSection(movie.seiyus, movie.karakters),
-            _buildSectionDivider(),
-            _buildCharacterSection(movie.karakters),
-          ],
-        ),
-      ),
+      body: _serverOffline
+          ? RefreshIndicator(
+              onRefresh: () async {
+                setState(() {
+                  _movieFuture = _loadMovie(fromRefresh: true);
+                });
+                await _movieFuture;
+              },
+              child: ListView(
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.cloud_off, size: 48, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Server offline\nTarik ke bawah untuk mencoba lagi',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: () async {
+                setState(() {
+                  _movieFuture = _loadMovie(fromRefresh: true);
+                });
+                await _movieFuture;
+              },
+              child: FutureBuilder<Movie>(
+                future: _movieFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: \n${snapshot.error}'));
+                  }
+                  final movie = snapshot.data!;
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildCoverImage(movie.coverUrl),
+                        const SizedBox(height: 20),
+                        _buildBasicInfoSection(movie),
+                        _buildSectionDivider(),
+                        _buildListSection('Genres', movie.genres, (g) => g.nama),
+                        _buildListSection('Themes', movie.themes, (t) => t.nama),
+                        _buildSectionDivider(),
+                        _buildStaffSection(movie.staffs),
+                        _buildSectionDivider(),
+                        _buildSeiyuSection(movie.seiyus, movie.karakters),
+                        _buildSectionDivider(),
+                        _buildCharacterSection(movie.karakters),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.of(context).popUntil((route) => route.isFirst);
@@ -171,10 +249,10 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         const SizedBox(height: 8),
         ...staffs.map((staff) => ListTile(
               leading: CircleAvatar(
-                backgroundImage: (staff.profileUrl?.isNotEmpty == true)
-                    ? CachedNetworkImageProvider(staff.profileUrl!)
+                backgroundImage: (staff.profileUrl.isNotEmpty)
+                    ? CachedNetworkImageProvider(staff.profileUrl)
                     : null,
-                child: (staff.profileUrl?.isEmpty ?? true) ? const Icon(Icons.person) : null,
+                child: (staff.profileUrl.isEmpty) ? const Icon(Icons.person) : null,
               ),
               title: Text(staff.name),
               subtitle: Text(staff.role),
@@ -192,14 +270,14 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         Text('Pengisi Suara', style: _sectionTitleStyle(context)),
         const SizedBox(height: 8),
         ...seiyus.map((seiyu) {
-          final karakterRelasi = karakters.where((k) => k.id == seiyu.seiyuMovie?.karakterId).toList();
+          final karakterRelasi = karakters.where((k) => k.id == seiyu.seiyuMovie.karakterId).toList();
 
           return ListTile(
             leading: CircleAvatar(
-              backgroundImage: (seiyu.profileUrl?.isNotEmpty == true)
-                  ? CachedNetworkImageProvider(seiyu.profileUrl!)
+              backgroundImage: (seiyu.profileUrl.isNotEmpty)
+                  ? CachedNetworkImageProvider(seiyu.profileUrl)
                   : null,
-              child: (seiyu.profileUrl?.isEmpty ?? true) ? const Icon(Icons.person) : null,
+              child: (seiyu.profileUrl.isEmpty) ? const Icon(Icons.person) : null,
             ),
             title: Text(seiyu.name),
             subtitle: karakterRelasi.isNotEmpty
@@ -251,7 +329,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: CachedNetworkImage(
-                        imageUrl: karakter.profileUrl ?? '',
+                        imageUrl: karakter.profileUrl,
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(color: Colors.grey[200]),
                         errorWidget: (context, url, error) => const Icon(Icons.error),

@@ -19,11 +19,31 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
   final SeiyuApiService _seiyuService = SeiyuApiService();
   final MovieApiService _movieService = MovieApiService();
   late Future<Seiyu> _seiyuFuture;
+  bool _serverOffline = false;
 
   @override
   void initState() {
     super.initState();
-    _seiyuFuture = _seiyuService.getSeiyuDetailId(widget.seiyuId);
+    _serverOffline = false;
+    _seiyuFuture = _loadSeiyu();
+  }
+
+  Future<Seiyu> _loadSeiyu({bool fromRefresh = false}) async {
+    setState(() {
+      if (fromRefresh) _serverOffline = false;
+    });
+    try {
+      final seiyu = await _seiyuService.getSeiyuDetailId(widget.seiyuId);
+      setState(() {
+        _serverOffline = false;
+      });
+      return seiyu;
+    } catch (e) {
+      setState(() {
+        _serverOffline = true;
+      });
+      rethrow;
+    }
   }
 
   @override
@@ -35,22 +55,51 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.of(context).pop();
-          }
+          },
         ),
       ),
-      body: FutureBuilder<Seiyu>(
-        future: _seiyuFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          final seiyu = snapshot.data!;
-          return _buildContent(seiyu);
-        },
-      ),
+      body: _serverOffline
+          ? RefreshIndicator(
+              onRefresh: () async {
+                setState(() {
+                  _seiyuFuture = _loadSeiyu(fromRefresh: true);
+                });
+              },
+              child: ListView(
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.cloud_off, size: 48, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Server offline\nTarik ke bawah untuk mencoba lagi',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : FutureBuilder<Seiyu>(
+              future: _seiyuFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: \\n${snapshot.error}'));
+                }
+                final seiyu = snapshot.data!;
+                return _buildContent(seiyu);
+              },
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.of(context).popUntil((route) => route.isFirst);
@@ -71,9 +120,9 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
           const SizedBox(height: 20),
           _buildBioSection(seiyu),
           const Divider(thickness: 1.5, height: 32),
-          if (seiyu.karakters?.isNotEmpty == true) _buildCharacterSection(seiyu.karakters!),
+          if (seiyu.karakters.isNotEmpty) _buildCharacterSection(seiyu.karakters),
           const Divider(thickness: 1.5, height: 32),
-          if (seiyu.movies?.isNotEmpty == true) _buildMovieSection(seiyu.movies!),
+          if (seiyu.movies.isNotEmpty) _buildMovieSection(seiyu.movies),
         ],
       ),
     );
@@ -145,7 +194,7 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
           errorWidget: (_, __, ___) => const Icon(Icons.error),
         ),
       ),
-      title: Text(karakter.nama ?? 'Nama tidak tersedia'),
+      title: Text(karakter.nama),
       subtitle: Text(karakter.bio ?? 'Bio tidak tersedia'),
       contentPadding: EdgeInsets.zero,
     );
@@ -181,7 +230,7 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
           errorWidget: (_, __, ___) => const Icon(Icons.error),
         ),
       ),
-      title: Text(movie.judul ?? 'Judul tidak tersedia'),
+      title: Text(movie.judul),
       subtitle: Text('${movie.tahunRilis ?? 'N/A'} • ${movie.type ?? 'N/A'}'),
       contentPadding: EdgeInsets.zero,
       onTap: () => _navigateToMovieDetail(movie.id),

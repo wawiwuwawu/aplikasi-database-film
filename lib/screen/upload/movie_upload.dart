@@ -1187,12 +1187,15 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
         coverImage: _coverImage,
       );
       _resetMovieForm();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Update Movie berhasil!')));
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Gagal update: ${e.toString()}';
       });
     } finally {
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
@@ -1206,12 +1209,15 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
     try {
       await _movieApiService.deleteMovie(_selectedMovie!.id);
       _resetMovieForm();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Movie berhasil dihapus!')));
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Gagal hapus: ${e.toString()}';
       });
     } finally {
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
