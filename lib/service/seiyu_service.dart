@@ -8,44 +8,22 @@ class SeiyuApiService {
   static const String _baseUrl = 'https://api.wawunime.my.id/api/seiyu';
 
   Future<List<Seiyu>> getSeiyuDetail({int page = 1, String? query}) async {
-  
-  final uri = Uri.parse('$_baseUrl/detail').replace(
-    queryParameters: {
-      'page': page.toString(),
-      if (query != null && query.isNotEmpty) 'search': query,
-    },
-  );
-
-  final response = await http.get(
-    uri,
-    headers: {
-      'Accept': 'application/json',
-    },
-  );
-
-  if (response.statusCode == 200) {
-    final jsonData = json.decode(response.body);
-    
-    if (jsonData['data'] is List) {
-      return (jsonData['data'] as List)
-          .map((seiyuJson) => Seiyu.fromJson(seiyuJson))
-          .toList();
-    } else {
-      throw Exception('Invalid API response structure');
-    }
-  } else {
-    throw Exception(
-      'Failed to load karakter: ${response.statusCode} - ${response.body}'
+    final uri = Uri.parse('$_baseUrl/detail').replace(
+      queryParameters: {
+        'page': page.toString(),
+        if (query != null && query.isNotEmpty) 'search': query,
+      },
     );
 
     final response = await http.get(
       uri,
-      headers: {'Accept': 'application/json'},
+      headers: {
+        'Accept': 'application/json',
+      },
     );
 
     if (response.statusCode == 200) {
       final jsonData = json.decode(response.body);
-
       if (jsonData['data'] is List) {
         return (jsonData['data'] as List)
             .map((seiyuJson) => Seiyu.fromJson(seiyuJson))
@@ -53,9 +31,22 @@ class SeiyuApiService {
       } else {
         throw Exception('Invalid API response structure');
       }
+    } else if (response.statusCode == 404) {
+      // Jika 404 dan error "Seiyu tidak ditemukan", kembalikan list kosong
+      try {
+        final jsonData = json.decode(response.body);
+        if (jsonData is Map &&
+            (jsonData['error'] == 'Seiyu tidak ditemukan' ||
+                jsonData['error'] == 'Data tidak ditemukan')) {
+          return [];
+        }
+      } catch (_) {}
+      throw Exception(
+        'Failed to load seiyu: ${response.statusCode} - ${response.body}',
+      );
     } else {
       throw Exception(
-        'Failed to load karakter: ${response.statusCode} - ${response.body}',
+        'Failed to load seiyu: ${response.statusCode} - ${response.body}',
       );
     }
   }

@@ -10,9 +10,7 @@ class MovieApiService {
   static const String _baseUrl = 'https://api.wawunime.my.id/api/movie';
 
   Future<List<Movie>> getMovies({int page = 1, String? query}) async {
-  const String baseUrl = 'https://api.wawunime.my.id/api/movie';
-  
-  final uri = Uri.parse(baseUrl).replace(
+  final uri = Uri.parse(_baseUrl).replace(
     queryParameters: {
       'page': page.toString(),
       if (query != null && query.isNotEmpty) 'search': query,
@@ -28,17 +26,20 @@ class MovieApiService {
 
   if (response.statusCode == 200) {
     final jsonData = json.decode(response.body);
-    
     if (jsonData['data'] is List) {
       return (jsonData['data'] as List)
           .map((movieJson) => Movie.fromJson(movieJson))
           .toList();
     } else {
-      throw Exception(
-        'Failed to load movies: ${response.statusCode} - ${response.body}',
-      );
+      // Jika data bukan List, kembalikan list kosong
+      return [];
     }
+  } else {
+    throw Exception(
+      'Failed to load movies: \\${response.statusCode} - \\${response.body}',
+    );
   }
+}
 
   Future<Movie> getMovieDetail(int id) async {
     final response = await http.get(Uri.parse('$_baseUrl/$id/detail'));

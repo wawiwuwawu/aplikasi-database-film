@@ -24,10 +24,12 @@ class _MovieListScreenState extends State<MovieListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   Timer? _debounce;
-  Credentials? _credentials;
-  bool _isLoading = false;
+  Credentials? _credentials;  bool _isLoading = false;
   bool _hasLoadedFromCache = false;
   bool _serverOffline = false; // Tambahkan state
+  bool _isSearching = false;
+  bool _searchLoading = false;
+  DateTime? _last429Time;
 
   @override
   void initState() {
@@ -44,30 +46,50 @@ class _MovieListScreenState extends State<MovieListScreen> {
     _debounce?.cancel();
     super.dispose();
   }
-
   void performSearch(String query) async {
-    if (query.isEmpty) {
+    if (query.isEmpty || query.length < 3) {
       setState(() {
         _suggestions.clear();
+        _searchLoading = false;
       });
       return;
     }
-
+    if (_isSearching) return;
+    if (_last429Time != null && DateTime.now().difference(_last429Time!) < Duration(seconds: 3)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tunggu sebentar sebelum mencari lagi.')),
+        );
+      }
+      return;
+    }
+    _isSearching = true;
+    setState(() { _searchLoading = true; });
     try {
       final movies = await _apiService.searchMovies(query);
+      if (!mounted) return;
       setState(() {
         _suggestions
           ..clear()
           ..addAll(movies);
+        _searchLoading = false;
       });
       print('Hasil pencarian: \\${movies.length} film ditemukan');
     } catch (e) {
       print('Error saat mencari film: \\${e}');
       if (mounted) {
+        String msg = 'Gagal mencari film. Server tidak merespons.';
+        if (e.toString().contains('429')) {
+          msg = 'Terlalu cepat, tunggu sebentar.';
+          _last429Time = DateTime.now();
+        }
+        setState(() { _searchLoading = false; });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal mencari film. Server tidak merespons.')),
+          SnackBar(content: Text(msg)),
         );
       }
+    } finally {
+      _isSearching = false;
     }
   }
 
@@ -137,10 +159,9 @@ class _MovieListScreenState extends State<MovieListScreen> {
       });
     }
   }
-
   void _onSearchChanged() {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
+    _debounce = Timer(const Duration(milliseconds: 1200), () {
       final query = _searchController.text.trim();
       if (query.isNotEmpty) {
         performSearch(query);
@@ -298,18 +319,36 @@ class _MovieListScreenState extends State<MovieListScreen> {
                                 '${movie.tahunRilis} • ${movie.type}',
                                 style: TextStyle(color: Colors.grey[600], fontSize: 12),
                               ),
-                              onTap: () {
-                                setState(() {
-                                  _searchController.clear();
-                                  _suggestions.clear();
-                                });
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        MovieDetailScreen(movie: movie),
-                                  ),
+                              onTap: () async {
+                                // Tampilkan loading dialog
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (context) => const Center(child: CircularProgressIndicator()),
                                 );
+                                try {
+                                  final detailMovie = await _apiService.getMovieDetail(movie.id);
+                                  if (mounted) {
+                                    Navigator.pop(context); // tutup loading
+                                    setState(() {
+                                      _searchController.clear();
+                                      _suggestions.clear();
+                                    });
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => MovieDetailScreen(movie: detailMovie),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    Navigator.pop(context); // tutup loading
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Gagal memuat detail film.')),
+                                    );
+                                  }
+                                }
                               },
                             ),
                           );
@@ -555,8 +594,7 @@ class _AnimatedMovieCardState extends State<_AnimatedMovieCard> with SingleTicke
 class SearchResultScreen extends StatelessWidget {
   final List<Movie> searchResults;
 
-  const SearchResultScreen({Key? key, required this.searchResults})
-      : super(key: key);
+  const SearchResultScreen({Key? key, required this.searchResults}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -587,10 +625,8 @@ class SearchResultScreen extends StatelessWidget {
                         width: 50,
                         height: 75,
                         fit: BoxFit.cover,
-                        placeholder: (context, url) =>
-                            Container(color: Colors.grey[200]),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.error),
+                        placeholder: (context, url) => Container(color: Colors.grey[200]),
+                        errorWidget: (context, url, error) => const Icon(Icons.error),
                       ),
                     ),
                     title: Text(
@@ -606,14 +642,31 @@ class SearchResultScreen extends StatelessWidget {
                       '${movie.tahunRilis} • ${movie.type}',
                       style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              MovieDetailScreen(movie: movie),
-                        ),
+                    onTap: () async {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => const Center(child: CircularProgressIndicator()),
                       );
+                      try {
+                        final detailMovie = await MovieApiService().getMovieDetail(movie.id);
+                        if (context.mounted) {
+                          Navigator.pop(context); // tutup loading
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MovieDetailScreen(movie: detailMovie),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          Navigator.pop(context); // tutup loading
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Gagal memuat detail film.')),
+                          );
+                        }
+                      }
                     },
                   ),
                 );

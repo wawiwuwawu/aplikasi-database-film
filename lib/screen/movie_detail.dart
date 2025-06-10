@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter_application_1/service/staff_service.dart';
 import '../model/movie_model.dart';
-import '../model/staff_model.dart' as staffModel;
-import '../service/staff_service.dart';
 import 'karakter_detail_screen.dart';
 import 'seiyu_detail_screen.dart';
 import 'staff_detail_screen.dart';
@@ -254,22 +251,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     );
   }
 
-  List<staffModel.Staff> convertToStaffModelList(
-    List<Staff> staffsFromMovieModel,
-  ) {
-    return staffsFromMovieModel
-        .map(
-          (s) => staffModel.Staff(
-            id: s.id,
-            name: s.name,
-            role: s.role,
-            profileUrl: s.profileUrl,
-          ),
-        )
-        .toList();
-  }
 
-  Widget _buildStaffSection(List<staffModel.Staff> staffs) {
+  Widget _buildStaffSection(List<Staff> staffs) {
     if (staffs.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -280,12 +263,10 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         ...staffs.map((staff) {
           return ListTile(
             leading: CircleAvatar(
-              backgroundImage:
-                  (staff.profileUrl?.isNotEmpty == true)
-                      ? CachedNetworkImageProvider(staff.profileUrl!)
+              backgroundImage: (staff.profileUrl.isNotEmpty == true)
+                      ? CachedNetworkImageProvider(staff.profileUrl)
                       : null,
-              child:
-                  (staff.profileUrl?.isEmpty ?? true)
+              child: (staff.profileUrl.isEmpty)
                       ? const Icon(Icons.person)
                       : null,
             ),
