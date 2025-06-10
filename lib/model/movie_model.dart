@@ -78,11 +78,31 @@ class Movie {
       durasi: json['durasi'],
       rating: json['rating'],
       coverUrl: json['cover_url'],
-      genres: (json['genres'] as List<dynamic>?)?.map((e) => Genre.fromJson(e)).toList() ?? [],
-      themes: (json['themes'] as List<dynamic>?)?.map((e) => ThemeMovie.fromJson(e)).toList() ?? [],
-      staffs: (json['staffs'] as List<dynamic>?)?.map((e) => Staff.fromJson(e)).toList() ?? [],
-      seiyus: (json['seiyus'] as List<dynamic>?)?.map((e) => Seiyu.fromJson(e)).toList() ?? [],
-      karakters: (json['karakters'] as List<dynamic>?)?.map((e) => Karakter.fromJson(e)).toList() ?? [],
+      genres:
+          (json['genres'] as List<dynamic>?)
+              ?.map((e) => Genre.fromJson(e))
+              .toList() ??
+          [],
+      themes:
+          (json['themes'] as List<dynamic>?)
+              ?.map((e) => ThemeMovie.fromJson(e))
+              .toList() ??
+          [],
+      staffs:
+          (json['staffs'] as List<dynamic>?)
+              ?.map((e) => Staff.fromJson(e))
+              .toList() ??
+          [],
+      seiyus:
+          (json['seiyus'] as List<dynamic>?)
+              ?.map((e) => Seiyu.fromJson(e))
+              .toList() ??
+          [],
+      karakters:
+          (json['karakters'] as List<dynamic>?)
+              ?.map((e) => Karakter.fromJson(e))
+              .toList() ??
+          [],
     );
   }
 
@@ -129,10 +149,7 @@ class Genre {
   Genre({required this.id, required this.nama});
 
   factory Genre.fromJson(Map<String, dynamic> json) {
-    return Genre(
-      id: json['id'],
-      nama: json['nama'],
-    );
+    return Genre(id: json['id'], nama: json['nama']);
   }
 
   Map<String, dynamic> toJson() {
@@ -150,10 +167,7 @@ class ThemeMovie {
   ThemeMovie({required this.id, required this.nama});
 
   factory ThemeMovie.fromJson(Map<String, dynamic> json) {
-    return ThemeMovie(
-      id: json['id'],
-      nama: json['nama'],
-    );
+    return ThemeMovie(id: json['id'], nama: json['nama']);
   }
 
   Map<String, dynamic> toJson() {
@@ -216,9 +230,10 @@ class Seiyu {
       id: json['id'],
       name: json['name'],
       profileUrl: json['profile_url'],
-      karakters: (json['karakters'] as List)
-          .map((k) => SeiyuKarakter.fromJson(k))
-          .toList(),
+      karakters:
+          (json['karakters'] as List)
+              .map((k) => SeiyuKarakter.fromJson(k))
+              .toList(),
       seiyuMovie: SeiyuMovie.fromJson(json['SeiyuMovie']),
     );
   }
@@ -241,10 +256,7 @@ class SeiyuKarakter {
   SeiyuKarakter({required this.id, required this.nama});
 
   factory SeiyuKarakter.fromJson(Map<String, dynamic> json) {
-    return SeiyuKarakter(
-      id: json['id'],
-      nama: json['nama'],
-    );
+    return SeiyuKarakter(id: json['id'], nama: json['nama']);
   }
 
   Map<String, dynamic> toJson() {
@@ -261,9 +273,7 @@ class SeiyuMovie {
   SeiyuMovie({required this.karakterId});
 
   factory SeiyuMovie.fromJson(Map<String, dynamic> json) {
-    return SeiyuMovie(
-      karakterId: json['karakter_id'],
-    );
+    return SeiyuMovie(karakterId: json['karakter_id']);
   }
 
   Map<String, dynamic> toJson() {
@@ -278,11 +288,7 @@ class Karakter {
   final String nama;
   final String profileUrl;
 
-  Karakter({
-    required this.id,
-    required this.nama,
-    required this.profileUrl,
-  });
+  Karakter({required this.id, required this.nama, required this.profileUrl});
 
   factory Karakter.fromJson(Map<String, dynamic> json) {
     return Karakter(

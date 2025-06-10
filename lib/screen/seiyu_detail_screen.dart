@@ -135,9 +135,10 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
         child: CachedNetworkImage(
           imageUrl: seiyu.profileUrl ?? '',
           width: 185,
-          height:275,
+          height: 275,
           fit: BoxFit.cover,
-          placeholder: (_, __) => const Center(child: CircularProgressIndicator()),
+          placeholder:
+              (_, __) => const Center(child: CircularProgressIndicator()),
           errorWidget: (_, __, ___) => const Icon(Icons.error, size: 50),
         ),
       ),
@@ -151,9 +152,9 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
         Text(
           'Biografi',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.blue[800],
-              ),
+            fontWeight: FontWeight.bold,
+            color: Colors.blue[800],
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -171,9 +172,9 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
         Text(
           'Karakter yang Diisi Suara',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.blue[800],
-              ),
+            fontWeight: FontWeight.bold,
+            color: Colors.blue[800],
+          ),
         ),
         const SizedBox(height: 12),
         ...karakters.map(_buildCharacterTile).toList(),
@@ -207,9 +208,9 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
         Text(
           'Film Terkait',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.blue[800],
-              ),
+            fontWeight: FontWeight.bold,
+            color: Colors.blue[800],
+          ),
         ),
         const SizedBox(height: 12),
         ...movies.map(_buildMovieTile).toList(),
@@ -245,16 +246,14 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
       Navigator.of(context).pop(); // Tutup loading dialog
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => MovieDetailScreen(movie: movie),
-        ),
+        MaterialPageRoute(builder: (_) => MovieDetailScreen(movie: movie)),
       );
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context).pop(); // Tutup loading dialog
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat detail film: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal memuat detail film: $e')));
     }
   }
 

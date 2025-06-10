@@ -15,12 +15,7 @@ class Karakter {
     this.movies = const [],
   });
 
-  Karakter copyWith({
-    int? id,
-    String? nama,
-    String? bio,
-    String? profileUrl,
-  }) {
+  Karakter copyWith({int? id, String? nama, String? bio, String? profileUrl}) {
     return Karakter(
       id: id ?? this.id,
       nama: nama ?? this.nama,
@@ -31,16 +26,23 @@ class Karakter {
 
   factory Karakter.fromJson(Map<String, dynamic> json) {
     return Karakter(
-      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
+      id:
+          json['id'] is int
+              ? json['id'] as int
+              : int.tryParse('${json['id']}') ?? 0,
       nama: json['nama'] as String? ?? 'Nama tidak tersedia',
       bio: json['bio'] as String?,
       profileUrl: json['profile_url'] as String?,
-      seiyus: (json['seiyus'] as List<dynamic>?)
-          ?.map((s) => SeiyuKarakter.fromJson(s as Map<String, dynamic>))
-          .toList() ?? [],
-      movies: (json['movies'] as List<dynamic>?)
-          ?.map((m) => MovieKarakter.fromJson(m as Map<String, dynamic>))
-          .toList() ?? [],
+      seiyus:
+          (json['seiyus'] as List<dynamic>?)
+              ?.map((s) => SeiyuKarakter.fromJson(s as Map<String, dynamic>))
+              .toList() ??
+          [],
+      movies:
+          (json['movies'] as List<dynamic>?)
+              ?.map((m) => MovieKarakter.fromJson(m as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 }
@@ -70,7 +72,10 @@ class SeiyuKarakter {
 
   factory SeiyuKarakter.fromJson(Map<String, dynamic> json) {
     return SeiyuKarakter(
-      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
+      id:
+          json['id'] is int
+              ? json['id'] as int
+              : int.tryParse('${json['id']}') ?? 0,
       name: json['name'] as String? ?? 'Unknown',
       birthday: json['birthday'] as String?,
       bio: json['bio'] as String?,
@@ -108,13 +113,25 @@ class MovieKarakter {
 
   factory MovieKarakter.fromJson(Map<String, dynamic> json) {
     return MovieKarakter(
-      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
+      id:
+          json['id'] is int
+              ? json['id'] as int
+              : int.tryParse('${json['id']}') ?? 0,
       judul: json['judul'] as String? ?? 'Untitled',
       sinopsis: json['sinopsis'] as String?,
-      tahunRilis: json['tahun_rilis'] is int ? json['tahun_rilis'] as int : int.tryParse('${json['tahun_rilis']}'),
+      tahunRilis:
+          json['tahun_rilis'] is int
+              ? json['tahun_rilis'] as int
+              : int.tryParse('${json['tahun_rilis']}'),
       type: json['type'] as String?,
-      episode: json['episode'] is int ? json['episode'] as int : int.tryParse('${json['episode']}'),
-      durasi: json['durasi'] is int ? json['durasi'] as int : int.tryParse('${json['durasi']}'),
+      episode:
+          json['episode'] is int
+              ? json['episode'] as int
+              : int.tryParse('${json['episode']}'),
+      durasi:
+          json['durasi'] is int
+              ? json['durasi'] as int
+              : int.tryParse('${json['durasi']}'),
       rating: json['rating'] as String?,
       coverUrl: json['cover_url'] as String?,
     );

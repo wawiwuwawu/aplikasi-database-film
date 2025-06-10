@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_application_1/service/staff_service.dart';
 import '../model/movie_model.dart';
+import '../model/staff_model.dart' as staffModel;
+import '../service/staff_service.dart';
 import 'karakter_detail_screen.dart';
 import 'seiyu_detail_screen.dart';
+import 'staff_detail_screen.dart';
 
 class MovieDetailScreen extends StatefulWidget {
   final Movie movie;
@@ -151,24 +155,24 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   }
 
   Widget _buildPlaceholder() => Container(
-        width: 200,
-        height: 200,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Center(child: CircularProgressIndicator()),
-      );
+    width: 200,
+    height: 200,
+    decoration: BoxDecoration(
+      color: Colors.grey[200],
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: const Center(child: CircularProgressIndicator()),
+  );
 
   Widget _buildErrorWidget() => Container(
-        width: 200,
-        height: 200,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(Icons.error, size: 40, color: Colors.red),
-      );
+    width: 200,
+    height: 200,
+    decoration: BoxDecoration(
+      color: Colors.grey[200],
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: const Icon(Icons.error, size: 40, color: Colors.red),
+  );
 
   Widget _buildBasicInfoSection(Movie movie) {
     return Column(
@@ -189,12 +193,17 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         Text(
           movie.sinopsis.isNotEmpty ? movie.sinopsis : 'Tidak ada sinopsis',
           maxLines: _isSynopsisExpanded ? null : 4,
-          overflow: _isSynopsisExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+          overflow:
+              _isSynopsisExpanded
+                  ? TextOverflow.visible
+                  : TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 16, height: 1.5),
         ),
         if (movie.sinopsis.isNotEmpty)
           GestureDetector(
-            onTap: () => setState(() => _isSynopsisExpanded = !_isSynopsisExpanded),
+            onTap:
+                () =>
+                    setState(() => _isSynopsisExpanded = !_isSynopsisExpanded),
             child: Text(
               _isSynopsisExpanded ? 'Lebih Sedikit' : 'Baca Selengkapnya',
               style: TextStyle(
@@ -218,7 +227,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
 
   Widget _buildSectionDivider() => const Divider(thickness: 1.5, height: 32);
 
-  Widget _buildListSection<T>(String title, List<T> items, String Function(T) nameBuilder) {
+  Widget _buildListSection<T>(
+    String title,
+    List<T> items,
+    String Function(T) nameBuilder,
+  ) {
     if (items.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,35 +241,66 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: items.map((item) {
-            final name = nameBuilder(item);
-            return Chip(
-              label: Text(name, overflow: TextOverflow.ellipsis),
-              backgroundColor: Colors.grey[200],
-            );
-          }).toList(),
+          children:
+              items.map((item) {
+                final name = nameBuilder(item);
+                return Chip(
+                  label: Text(name, overflow: TextOverflow.ellipsis),
+                  backgroundColor: Colors.grey[200],
+                );
+              }).toList(),
         ),
       ],
     );
   }
 
-  Widget _buildStaffSection(List<Staff> staffs) {
+  List<staffModel.Staff> convertToStaffModelList(
+    List<Staff> staffsFromMovieModel,
+  ) {
+    return staffsFromMovieModel
+        .map(
+          (s) => staffModel.Staff(
+            id: s.id,
+            name: s.name,
+            role: s.role,
+            profileUrl: s.profileUrl,
+          ),
+        )
+        .toList();
+  }
+
+  Widget _buildStaffSection(List<staffModel.Staff> staffs) {
     if (staffs.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Staff Produksi', style: _sectionTitleStyle(context)),
         const SizedBox(height: 8),
-        ...staffs.map((staff) => ListTile(
-              leading: CircleAvatar(
-                backgroundImage: (staff.profileUrl.isNotEmpty)
-                    ? CachedNetworkImageProvider(staff.profileUrl)
-                    : null,
-                child: (staff.profileUrl.isEmpty) ? const Icon(Icons.person) : null,
-              ),
-              title: Text(staff.name),
-              subtitle: Text(staff.role),
-            )),
+        ...staffs.map((staff) {
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundImage:
+                  (staff.profileUrl?.isNotEmpty == true)
+                      ? CachedNetworkImageProvider(staff.profileUrl!)
+                      : null,
+              child:
+                  (staff.profileUrl?.isEmpty ?? true)
+                      ? const Icon(Icons.person)
+                      : null,
+            ),
+            title: Text(staff.name),
+            subtitle: Text(staff.role),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StaffDetailScreen(staffId: staff.id),
+                ),
+              );
+            },
+          );
+        }).toList(),
       ],
     );
   }
@@ -280,9 +324,10 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
               child: (seiyu.profileUrl.isEmpty) ? const Icon(Icons.person) : null,
             ),
             title: Text(seiyu.name),
-            subtitle: karakterRelasi.isNotEmpty
-                ? Text('Karakter: ${karakterRelasi.first.nama}')
-                : const Text('Karakter tidak diketahui'),
+            subtitle:
+                karakterRelasi.isNotEmpty
+                    ? Text('Karakter: ${karakterRelasi.first.nama}')
+                    : const Text('Karakter tidak diketahui'),
             onTap: () {
               Navigator.push(
                 context,
@@ -317,12 +362,15 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
           itemBuilder: (context, index) {
             final karakter = karakters[index];
             return GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CharacterDetailScreen(characterId: karakter.id),
-                ),
-              ),
+              onTap:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) =>
+                              CharacterDetailScreen(characterId: karakter.id),
+                    ),
+                  ),
               child: Column(
                 children: [
                   Expanded(
@@ -331,8 +379,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                       child: CachedNetworkImage(
                         imageUrl: karakter.profileUrl,
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(color: Colors.grey[200]),
-                        errorWidget: (context, url, error) => const Icon(Icons.error),
+                        placeholder:
+                            (context, url) =>
+                                Container(color: Colors.grey[200]),
+                        errorWidget:
+                            (context, url, error) => const Icon(Icons.error),
                       ),
                     ),
                   ),
@@ -358,6 +409,10 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
           fontWeight: FontWeight.bold,
           color: Colors.blue[800],
         ) ??
-        const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue);
+        const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue,
+        );
   }
 }

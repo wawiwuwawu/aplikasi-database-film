@@ -34,18 +34,15 @@ class MovieApiService {
           .map((movieJson) => Movie.fromJson(movieJson))
           .toList();
     } else {
-      throw Exception('Invalid API response structure');
+      throw Exception(
+        'Failed to load movies: ${response.statusCode} - ${response.body}',
+      );
     }
-  } else {
-    throw Exception(
-      'Failed to load movies: ${response.statusCode} - ${response.body}'
-    );
   }
-}
 
   Future<Movie> getMovieDetail(int id) async {
     final response = await http.get(Uri.parse('$_baseUrl/$id/detail'));
-    
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return Movie.fromJson(data['data']);
@@ -185,17 +182,13 @@ class MovieApiService {
   }
 
   Future<List<Movie>> searchMovies(String name) async {
-    final uri = Uri.parse('$_baseUrl/search').replace(
-      queryParameters: {
-        'name': name,
-      },
-    );
+    final uri = Uri.parse(
+      '$_baseUrl/search',
+    ).replace(queryParameters: {'name': name});
 
     final response = await http.get(
       uri,
-      headers: {
-        'Accept': 'application/json',
-      },
+      headers: {'Accept': 'application/json'},
     );
 
     if (response.statusCode == 200) {
