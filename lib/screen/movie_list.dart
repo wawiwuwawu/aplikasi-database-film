@@ -30,6 +30,10 @@ class _MovieListScreenState extends State<MovieListScreen> {
   bool _isSearching = false;
   bool _searchLoading = false;
   DateTime? _last429Time;
+  ScrollController _scrollController = ScrollController();
+  int _currentPage = 1;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
 
   @override
   void initState() {
@@ -38,12 +42,14 @@ class _MovieListScreenState extends State<MovieListScreen> {
     _getCredentials();
     _loadMovies(fromRefresh: true); // Selalu refresh dari server saat pertama kali buka
     _searchController.addListener(_onSearchChanged);
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     _debounce?.cancel();
+    _scrollController.dispose();
     super.dispose();
   }
   void performSearch(String query) async {
@@ -103,10 +109,42 @@ class _MovieListScreenState extends State<MovieListScreen> {
     }
   }
 
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 && !_isLoadingMore && _hasMore && !_isLoading) {
+      _fetchMoreMovies();
+    }
+  }
+
+  Future<void> _fetchMoreMovies() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() { _isLoadingMore = true; });
+    try {
+      final nextPage = _currentPage + 1;
+      final movies = await _apiService.getMovies(query: '', page: nextPage);
+      if (movies.isNotEmpty) {
+        setState(() {
+          _movies.addAll(movies);
+          _currentPage = nextPage;
+          _hasMore = movies.length >= 20; // asumsikan 20 per page
+        });
+      } else {
+        setState(() { _hasMore = false; });
+      }
+    } catch (e) {
+      setState(() { _hasMore = false; });
+    } finally {
+      setState(() { _isLoadingMore = false; });
+    }
+  }
+
   Future<void> _loadMovies({bool fromRefresh = false}) async {
     setState(() {
       _isLoading = true;
       if (fromRefresh) _serverOffline = false; // reset offline saat refresh
+      if (fromRefresh) {
+        _currentPage = 1;
+        _hasMore = true;
+      }
     });
     final prefs = await SharedPreferences.getInstance();
     if (!fromRefresh && !_hasLoadedFromCache) {
@@ -126,12 +164,14 @@ class _MovieListScreenState extends State<MovieListScreen> {
     }
     if (fromRefresh || !_hasLoadedFromCache) {
       try {
-        final movies = await _apiService.getMovies(query: '');
+        final movies = await _apiService.getMovies(query: '', page: 1);
         setState(() {
           _movies
             ..clear()
             ..addAll(movies);
           _serverOffline = false;
+          _currentPage = 1;
+          _hasMore = movies.length >= 20;
         });
         // Update cache
         await prefs.setString('cached_movies', Movie.encodeList(movies));
@@ -264,6 +304,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
                               ),
                             )
                           : GridView.builder(
+                              controller: _scrollController,
                               padding: const EdgeInsets.all(8),
                               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
@@ -271,11 +312,17 @@ class _MovieListScreenState extends State<MovieListScreen> {
                                 crossAxisSpacing: 8,
                                 mainAxisSpacing: 8,
                               ),
-                              itemCount: _movies.length,
-                              itemBuilder: (context, index) => _AnimatedMovieCard(
-                                index: index,
-                                child: _buildMovieCard(_movies[index]),
-                              ),
+                              itemCount: _movies.length + (_isLoadingMore ? 1 : 0),
+                              itemBuilder: (context, index) {
+                                if (index < _movies.length) {
+                                  return _buildMovieCard(_movies[index]);
+                                } else {
+                                  return Center(child: Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: CircularProgressIndicator(),
+                                  ));
+                                }
+                              },
                             ),
                 ),
                 if (_suggestions.isNotEmpty)
@@ -290,67 +337,64 @@ class _MovieListScreenState extends State<MovieListScreen> {
                         itemCount: _suggestions.length,
                         itemBuilder: (context, index) {
                           final movie = _suggestions[index];
-                          return _AnimatedMovieCard(
-                            index: index,
-                            child: ListTile(
-                              leading: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: CachedNetworkImage(
-                                  imageUrl: movie.coverUrl,
-                                  width: 50,
-                                  height: 75,
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) =>
-                                      Container(color: Colors.grey[200]),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
-                                ),
+                          return ListTile(
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: CachedNetworkImage(
+                                imageUrl: movie.coverUrl,
+                                width: 50,
+                                height: 75,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) =>
+                                    Container(color: Colors.grey[200]),
+                                errorWidget: (context, url, error) =>
+                                    const Icon(Icons.error),
                               ),
-                              title: Text(
-                                movie.judul,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                '${movie.tahunRilis} • ${movie.type}',
-                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                              ),
-                              onTap: () async {
-                                // Tampilkan loading dialog
-                                showDialog(
-                                  context: context,
-                                  barrierDismissible: false,
-                                  builder: (context) => const Center(child: CircularProgressIndicator()),
-                                );
-                                try {
-                                  final detailMovie = await _apiService.getMovieDetail(movie.id);
-                                  if (mounted) {
-                                    Navigator.pop(context); // tutup loading
-                                    setState(() {
-                                      _searchController.clear();
-                                      _suggestions.clear();
-                                    });
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => MovieDetailScreen(movie: detailMovie),
-                                      ),
-                                    );
-                                  }
-                                } catch (e) {
-                                  if (mounted) {
-                                    Navigator.pop(context); // tutup loading
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Gagal memuat detail film.')),
-                                    );
-                                  }
-                                }
-                              },
                             ),
+                            title: Text(
+                              movie.judul,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              '${movie.tahunRilis} • ${movie.type}',
+                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                            ),
+                            onTap: () async {
+                              // Tampilkan loading dialog
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) => const Center(child: CircularProgressIndicator()),
+                              );
+                              try {
+                                final detailMovie = await _apiService.getMovieDetail(movie.id);
+                                if (mounted) {
+                                  Navigator.pop(context); // tutup loading
+                                  setState(() {
+                                    _searchController.clear();
+                                    _suggestions.clear();
+                                  });
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => MovieDetailScreen(movie: detailMovie),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  Navigator.pop(context); // tutup loading
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Gagal memuat detail film.')),
+                                  );
+                                }
+                              }
+                            },
                           );
                         },
                       ),
@@ -430,21 +474,88 @@ class _MovieListScreenState extends State<MovieListScreen> {
                   Positioned(
                     bottom: 8,
                     right: 8,
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 4,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          margin: EdgeInsets.only(right: (_credentials != null && _credentials!.role == "admin") ? 8 : 0),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: _SaveButton(movie: movie, iconSize: 20),
+                          child: _SaveButton(movie: movie, iconSize: 20),
+                        ),
+                        if (_credentials != null && _credentials!.role == "admin")
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.85),
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                              tooltip: 'Quick Remove',
+                              onPressed: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Konfirmasi Hapus'),
+                                    content: Text('Yakin ingin menghapus "${movie.judul}"?'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, false),
+                                        child: const Text('Batal'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, true),
+                                        child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true) {
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (context) => const Center(child: CircularProgressIndicator()),
+                                  );
+                                  try {
+                                    await _apiService.deleteMovie(movie.id);
+                                    if (mounted) {
+                                      setState(() {
+                                        _movies.removeWhere((m) => m.id == movie.id);
+                                      });
+                                      Navigator.pop(context); // tutup loading
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Berhasil menghapus film.')),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      Navigator.pop(context); // tutup loading
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Gagal menghapus film.')),
+                                      );
+                                    }
+                                  }
+                                }
+                              },
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -557,37 +668,6 @@ class _SaveButtonState extends State<_SaveButton> {
 
   String _statusLabel(String value) {
     return _statusOptions.firstWhere((item) => item['value'] == value)['label'] as String;
-  }
-}
-
-class _AnimatedMovieCard extends StatefulWidget {
-  final Widget child;
-  final int index;
-  final Duration baseDelay = const Duration(milliseconds: 100);
-  const _AnimatedMovieCard({required this.child, required this.index, Key? key}) : super(key: key);
-
-  @override
-  State<_AnimatedMovieCard> createState() => _AnimatedMovieCardState();
-}
-
-class _AnimatedMovieCardState extends State<_AnimatedMovieCard> with SingleTickerProviderStateMixin {
-  double _opacity = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    Future.delayed(widget.baseDelay * widget.index, () {
-      if (mounted) setState(() => _opacity = 1);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: _opacity,
-      duration: const Duration(milliseconds: 400),
-      child: widget.child,
-    );
   }
 }
 
