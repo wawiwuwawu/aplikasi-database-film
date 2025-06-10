@@ -76,15 +76,35 @@ class Movie {
       durasi: json['durasi'],
       rating: json['rating'],
       coverUrl: json['cover_url'],
-      genres: (json['genres'] as List<dynamic>?)?.map((e) => Genre.fromJson(e)).toList() ?? [],
-      themes: (json['themes'] as List<dynamic>?)?.map((e) => ThemeMovie.fromJson(e)).toList() ?? [],
-      staffs: (json['staffs'] as List<dynamic>?)?.map((e) => Staff.fromJson(e)).toList() ?? [],
-      seiyus: (json['seiyus'] as List<dynamic>?)?.map((e) => Seiyu.fromJson(e)).toList() ?? [],
-      karakters: (json['karakters'] as List<dynamic>?)?.map((e) => Karakter.fromJson(e)).toList() ?? [],
+      genres:
+          (json['genres'] as List<dynamic>?)
+              ?.map((e) => Genre.fromJson(e))
+              .toList() ??
+          [],
+      themes:
+          (json['themes'] as List<dynamic>?)
+              ?.map((e) => ThemeMovie.fromJson(e))
+              .toList() ??
+          [],
+      staffs:
+          (json['staffs'] as List<dynamic>?)
+              ?.map((e) => Staff.fromJson(e))
+              .toList() ??
+          [],
+      seiyus:
+          (json['seiyus'] as List<dynamic>?)
+              ?.map((e) => Seiyu.fromJson(e))
+              .toList() ??
+          [],
+      karakters:
+          (json['karakters'] as List<dynamic>?)
+              ?.map((e) => Karakter.fromJson(e))
+              .toList() ??
+          [],
     );
   }
 
-    Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'judul': judul,
@@ -111,17 +131,11 @@ class Genre {
   Genre({required this.id, required this.nama});
 
   factory Genre.fromJson(Map<String, dynamic> json) {
-    return Genre(
-      id: json['id'],
-      nama: json['nama'],
-    );
+    return Genre(id: json['id'], nama: json['nama']);
   }
 
-    Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'nama': nama,
-    };
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'nama': nama};
   }
 }
 
@@ -132,17 +146,11 @@ class ThemeMovie {
   ThemeMovie({required this.id, required this.nama});
 
   factory ThemeMovie.fromJson(Map<String, dynamic> json) {
-    return ThemeMovie(
-      id: json['id'],
-      nama: json['nama'],
-    );
+    return ThemeMovie(id: json['id'], nama: json['nama']);
   }
 
-    Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'nama': nama,
-    };
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'nama': nama};
   }
 }
 
@@ -168,13 +176,8 @@ class Staff {
     );
   }
 
-    Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'role': role,
-      'profile_url': profileUrl,
-    };
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'name': name, 'role': role, 'profile_url': profileUrl};
   }
 }
 
@@ -198,14 +201,15 @@ class Seiyu {
       id: json['id'],
       name: json['name'],
       profileUrl: json['profile_url'],
-      karakters: (json['karakters'] as List)
-          .map((k) => SeiyuKarakter.fromJson(k))
-          .toList(),
+      karakters:
+          (json['karakters'] as List)
+              .map((k) => SeiyuKarakter.fromJson(k))
+              .toList(),
       seiyuMovie: SeiyuMovie.fromJson(json['SeiyuMovie']),
     );
   }
 
-    Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
@@ -223,17 +227,11 @@ class SeiyuKarakter {
   SeiyuKarakter({required this.id, required this.nama});
 
   factory SeiyuKarakter.fromJson(Map<String, dynamic> json) {
-    return SeiyuKarakter(
-      id: json['id'],
-      nama: json['nama'],
-    );
+    return SeiyuKarakter(id: json['id'], nama: json['nama']);
   }
 
-    Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'nama': nama,
-    };
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'nama': nama};
   }
 }
 
@@ -243,15 +241,11 @@ class SeiyuMovie {
   SeiyuMovie({required this.karakterId});
 
   factory SeiyuMovie.fromJson(Map<String, dynamic> json) {
-    return SeiyuMovie(
-      karakterId: json['karakter_id'],
-    );
+    return SeiyuMovie(karakterId: json['karakter_id']);
   }
 
-    Map<String, dynamic> toJson() {
-    return {
-      'karakter_id': karakterId,
-    };
+  Map<String, dynamic> toJson() {
+    return {'karakter_id': karakterId};
   }
 }
 
@@ -260,11 +254,7 @@ class Karakter {
   final String nama;
   final String profileUrl;
 
-  Karakter({
-    required this.id,
-    required this.nama,
-    required this.profileUrl,
-  });
+  Karakter({required this.id, required this.nama, required this.profileUrl});
 
   factory Karakter.fromJson(Map<String, dynamic> json) {
     return Karakter(
@@ -274,11 +264,7 @@ class Karakter {
     );
   }
 
-    Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'nama': nama,
-      'profile_url': profileUrl,
-    };
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'nama': nama, 'profile_url': profileUrl};
   }
 }

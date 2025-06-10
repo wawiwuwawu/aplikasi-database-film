@@ -1,36 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../service/seiyu_service.dart';
+import '../model/staff_model.dart';
+import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../service/staff_service.dart';
 import '../service/movie_service.dart';
 import '../model/seiyu_model.dart';
 import '../model/movie_model.dart' as movie_model;
 import '../screen/movie_detail.dart';
 import '../screen/movie_list.dart';
 
-class SeiyuDetailScreen extends StatefulWidget {
-  final int seiyuId;
-  const SeiyuDetailScreen({required this.seiyuId, Key? key}) : super(key: key);
+class StaffDetailScreen extends StatefulWidget {
+  final int staffId;
+  const StaffDetailScreen({required this.staffId, Key? key}) : super(key: key);
 
   @override
-  _SeiyuDetailScreenState createState() => _SeiyuDetailScreenState();
+  _StaffDetailScreenState createState() => _StaffDetailScreenState();
 }
 
-class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
-  final SeiyuApiService _seiyuService = SeiyuApiService();
+class _StaffDetailScreenState extends State<StaffDetailScreen> {
+  final StaffService _staffService = StaffService();
   final MovieApiService _movieService = MovieApiService();
-  late Future<Seiyu> _seiyuFuture;
+  late Future<Staff> _staffFuture;
 
   @override
   void initState() {
     super.initState();
-    _seiyuFuture = _seiyuService.getSeiyuDetailId(widget.seiyuId);
+    _staffFuture = _staffService.getStaffDetailId(widget.staffId);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detail Seiyu'),
+        title: const Text('Detail Staff'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -38,8 +41,8 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
           },
         ),
       ),
-      body: FutureBuilder<Seiyu>(
-        future: _seiyuFuture,
+      body: FutureBuilder<Staff>(
+        future: _staffFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -47,46 +50,36 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
-          final seiyu = snapshot.data!;
-          return _buildContent(seiyu);
+          final staff = snapshot.data!;
+          return _buildContent(staff);
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        },
-        child: const Icon(Icons.home),
-        tooltip: 'Kembali ke Home',
       ),
     );
   }
 
-  Widget _buildContent(Seiyu seiyu) {
+  Widget _buildContent(Staff staff) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSeiyuProfile(seiyu),
+          _buildStaffProfile(staff),
           const SizedBox(height: 20),
-          _buildBioSection(seiyu),
+          _buildBioSection(staff),
           const Divider(thickness: 1.5, height: 32),
-          if (seiyu.karakters?.isNotEmpty == true)
-            _buildCharacterSection(seiyu.karakters!),
-          const Divider(thickness: 1.5, height: 32),
-          if (seiyu.movies?.isNotEmpty == true)
-            _buildMovieSection(seiyu.movies!),
+          if (staff.movies?.isNotEmpty == true)
+            _buildMovieSection(staff.movies!),
         ],
       ),
     );
   }
 
-  Widget _buildSeiyuProfile(Seiyu seiyu) {
+  Widget _buildStaffProfile(Staff staff) {
     return Center(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: CachedNetworkImage(
-          imageUrl: seiyu.profileUrl ?? '',
+          imageUrl: staff.profileUrl ?? '',
           width: 185,
           height: 275,
           fit: BoxFit.cover,
@@ -98,7 +91,7 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
     );
   }
 
-  Widget _buildBioSection(Seiyu seiyu) {
+  Widget _buildBioSection(Staff staff) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -111,50 +104,14 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          seiyu.bio?.isNotEmpty == true ? seiyu.bio! : 'Tidak ada bio',
+          staff.bio?.isNotEmpty == true ? staff.bio! : 'Tidak ada bio',
           style: const TextStyle(fontSize: 16),
         ),
       ],
     );
   }
 
-  Widget _buildCharacterSection(List<KarakterSeiyu> karakters) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Karakter yang Diisi Suara',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.blue[800],
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...karakters.map(_buildCharacterTile).toList(),
-      ],
-    );
-  }
-
-  Widget _buildCharacterTile(KarakterSeiyu karakter) {
-    return ListTile(
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: CachedNetworkImage(
-          imageUrl: karakter.profileUrl ?? '',
-          width: 50,
-          height: 75,
-          fit: BoxFit.cover,
-          placeholder: (_, __) => const CircularProgressIndicator(),
-          errorWidget: (_, __, ___) => const Icon(Icons.error),
-        ),
-      ),
-      title: Text(karakter.nama ?? 'Nama tidak tersedia'),
-      subtitle: Text(karakter.bio ?? 'Bio tidak tersedia'),
-      contentPadding: EdgeInsets.zero,
-    );
-  }
-
-  Widget _buildMovieSection(List<MovieSeiyu> movies) {
+  Widget _buildMovieSection(List<MovieStaff> movies) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -171,7 +128,7 @@ class _SeiyuDetailScreenState extends State<SeiyuDetailScreen> {
     );
   }
 
-  Widget _buildMovieTile(MovieSeiyu movie) {
+  Widget _buildMovieTile(MovieStaff movie) {
     return ListTile(
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(8),

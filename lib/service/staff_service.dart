@@ -12,11 +12,12 @@ class StaffService {
     required File coverImage,
   }) async {
     final uri = Uri.parse(_baseUrl);
-    final request = http.MultipartRequest('POST', uri)
-      ..headers['Accept'] = 'application/json'
-      ..fields['name']     = staff.name
-      ..fields['role']     = staff.role
-      ..fields['bio']      = staff.bio ?? '';
+    final request =
+        http.MultipartRequest('POST', uri)
+          ..headers['Accept'] = 'application/json'
+          ..fields['name'] = staff.name
+          ..fields['role'] = staff.role
+          ..fields['bio'] = staff.bio ?? '';
 
     if (staff.birthday != null && staff.birthday!.trim().isNotEmpty) {
       request.fields['birthday'] = staff.birthday!.trim();
@@ -34,12 +35,15 @@ class StaffService {
     );
 
     final streamedResponse = await request.send();
-    final responseBody    = await streamedResponse.stream.bytesToString();
+    final responseBody = await streamedResponse.stream.bytesToString();
 
-    if (streamedResponse.statusCode >= 200 && streamedResponse.statusCode < 300) {
+    if (streamedResponse.statusCode >= 200 &&
+        streamedResponse.statusCode < 300) {
       return json.decode(responseBody);
     } else {
-      throw Exception('Upload failed: ${streamedResponse.statusCode} – $responseBody');
+      throw Exception(
+        'Upload failed: ${streamedResponse.statusCode} – $responseBody',
+      );
     }
   }
 
@@ -53,7 +57,7 @@ class StaffService {
 
     final response = await http.get(
       uri,
-      headers: {'Accept': 'application/json',},
+      headers: {'Accept': 'application/json'},
     );
 
     if (response.statusCode == 200) {
@@ -75,13 +79,13 @@ class StaffService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/$id'),
-        headers: {'Accept': 'application/json',},
-        );
+        headers: {'Accept': 'application/json'},
+      );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        if (data['data']  is Map<String, dynamic>) {
+        if (data['data'] is Map<String, dynamic>) {
           return Staff.fromJson(data['data']);
         } else {
           throw Exception('Invalid data format');
@@ -95,17 +99,44 @@ class StaffService {
     }
   }
 
+  Future<Staff> getStaffDetailId(int id) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/$id/movie'),
+        headers: {'Accept': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['data'] is Map<String, dynamic>) {
+          return Staff.fromJson(data['data']);
+        } else {
+          throw Exception('Invalid data strucuture');
+        }
+      } else {
+        throw Exception(
+          'Failed to load staff detail, Status: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('Error in getStaffDetailId: $e');
+      throw Exception('Failed to load data: $e');
+    }
+  }
+
   Future<void> updateStaff({
     required int id,
     required Staff staff,
     File? coverImage,
   }) async {
     final uri = Uri.parse('$_baseUrl/$id');
-    final request = http.MultipartRequest('PUT', uri)
-      ..headers['Accept'] = 'application/json'
-      ..fields['name']     = staff.name
-      ..fields['role']     = staff.role
-      ..fields['bio']      = staff.bio ?? '';
+    final request =
+        http.MultipartRequest('PUT', uri)
+          ..headers['Accept'] = 'application/json'
+          ..fields['name'] = staff.name
+          ..fields['role'] = staff.role
+          ..fields['bio'] = staff.bio ?? '';
 
     if (staff.birthday != null && staff.birthday!.trim().isNotEmpty) {
       request.fields['birthday'] = staff.birthday!.trim();
@@ -125,24 +156,26 @@ class StaffService {
     }
 
     final streamedResponse = await request.send();
-    final responseBody    = await streamedResponse.stream.bytesToString();
+    final responseBody = await streamedResponse.stream.bytesToString();
 
-    if (streamedResponse.statusCode >= 200 && streamedResponse.statusCode < 300) {
+    if (streamedResponse.statusCode >= 200 &&
+        streamedResponse.statusCode < 300) {
       print('Staff berhasil diperbarui: $responseBody');
     } else {
-      throw Exception('Update failed: ${streamedResponse.statusCode} – $responseBody');
+      throw Exception(
+        'Update failed: ${streamedResponse.statusCode} – $responseBody',
+      );
     }
   }
 
   Future<List<Staff>> searchStaffByName(String name) async {
-    final uri = Uri.parse('$_baseUrl/search').replace(
-      queryParameters: {
-      'name': name,
-    });
+    final uri = Uri.parse(
+      '$_baseUrl/search',
+    ).replace(queryParameters: {'name': name});
 
     final response = await http.get(
       uri,
-      headers: {'Accept': 'application/json',},
+      headers: {'Accept': 'application/json'},
     );
 
     if (response.statusCode == 200) {
@@ -170,5 +203,4 @@ class StaffService {
       throw Exception('Gagal menghapus staff: ${response.statusCode}');
     }
   }
-
 }
