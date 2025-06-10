@@ -8,11 +8,34 @@ class SeiyuApiService {
   static const String _baseUrl = 'https://api.wawunime.my.id/api/seiyu';
 
   Future<List<Seiyu>> getSeiyuDetail({int page = 1, String? query}) async {
-    final uri = Uri.parse('_baseUrl/detail').replace(
-      queryParameters: {
-        'page': page.toString(),
-        if (query != null && query.isNotEmpty) 'search': query,
-      },
+  
+  final uri = Uri.parse('$_baseUrl/detail').replace(
+    queryParameters: {
+      'page': page.toString(),
+      if (query != null && query.isNotEmpty) 'search': query,
+    },
+  );
+
+  final response = await http.get(
+    uri,
+    headers: {
+      'Accept': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final jsonData = json.decode(response.body);
+    
+    if (jsonData['data'] is List) {
+      return (jsonData['data'] as List)
+          .map((seiyuJson) => Seiyu.fromJson(seiyuJson))
+          .toList();
+    } else {
+      throw Exception('Invalid API response structure');
+    }
+  } else {
+    throw Exception(
+      'Failed to load karakter: ${response.statusCode} - ${response.body}'
     );
 
     final response = await http.get(

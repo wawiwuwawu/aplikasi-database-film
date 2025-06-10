@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../screen/staff_upload.dart';
-import '../screen/seiyu_upload.dart';
-import '../screen/karakter_upload.dart';
-import '../screen/movie_upload.dart';
+import 'upload/staff_upload.dart';
+import 'upload/seiyu_upload.dart';
+import 'upload/karakter_upload.dart';
+import 'upload/movie_upload.dart';
 
 class AdminMenuPage extends StatelessWidget {
   const AdminMenuPage({super.key});

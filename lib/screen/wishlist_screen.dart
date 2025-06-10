@@ -1,44 +1,43 @@
 import 'package:flutter/material.dart';
+import '../service/wishlist_service.dart';
 
-class WishlistScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> animeList = [
-    {
-      "title": "Kuroko No Basket",
-      "status": "Watching",
-      "progress": 0.3,
-      "image": "assets/kuroko.jpg",
-    },
-    {
-      "title": "Dragon Ball Z",
-      "status": "Watching",
-      "progress": 0.4,
-      "image": "assets/dragonball.jpg",
-    },
-    {
-      "title": "One Piece",
-      "status": "Watching",
-      "progress": 0.5,
-      "image": "assets/onepiece.jpg",
-    },
-    {
-      "title": "Samurai X",
-      "status": "Watching",
-      "progress": 0.2,
-      "image": "assets/samurai.jpg",
-    },
-    {
-      "title": "Naruto Shippuden",
-      "status": "Watching",
-      "progress": 0.7,
-      "image": "assets/naruto.jpg",
-    },
-    {
-      "title": "Fast X",
-      "status": "Watching",
-      "progress": 0.1,
-      "image": "assets/fastx.jpg",
-    },
-  ];
+class WishlistScreen extends StatefulWidget {
+  const WishlistScreen({Key? key}) : super(key: key);
+
+  @override
+  State<WishlistScreen> createState() => _WishlistScreenState();
+}
+
+class _WishlistScreenState extends State<WishlistScreen> {
+  final WishlistService _wishlistService = WishlistService();
+  List<Map<String, dynamic>> _animeList = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchWishlist();
+  }
+
+  Future<void> _fetchWishlist() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final list = await _wishlistService.fetchWishlist();
+      setState(() {
+        _animeList = list;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,80 +76,86 @@ class WishlistScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ListView.builder(
-                    itemCount: animeList.length,
-                    itemBuilder: (context, index) {
-                      final anime = animeList[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: Row(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              // child: Image.asset(
-                              //   anime['image'],
-                              //   width: 50,
-                              //   height: 50,
-                              //   fit: BoxFit.cover,
-                              // ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    anime['title'],
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16),
+                child: _isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : _error != null
+                        ? Center(child: Text(_error!, style: TextStyle(color: Colors.red)))
+                        : RefreshIndicator(
+                            onRefresh: _fetchWishlist,
+                            child: _animeList.isEmpty
+                                ? Center(child: Text('Tidak ada data wishlist'))
+                                : ListView.builder(
+                                    itemCount: _animeList.length,
+                                    itemBuilder: (context, index) {
+                                      final anime = _animeList[index];
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                        child: Row(
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: anime['image'] != null && anime['image'].toString().isNotEmpty
+                                                  ? Image.network(
+                                                      anime['image'],
+                                                      width: 50,
+                                                      height: 50,
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 50),
+                                                    )
+                                                  : const Icon(Icons.image, size: 50),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    anime['title'] ?? '',
+                                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Row(
+                                                    children: [
+                                                      if (anime['tahun_rilis'] != null)
+                                                        Text('${anime['tahun_rilis']}', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                                      if (anime['tahun_rilis'] != null && anime['rating'] != null)
+                                                        Text(' • ', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                                      if (anime['rating'] != null)
+                                                        Text('${anime['rating']}', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    anime['status'] ?? '',
+                                                    style: TextStyle(
+                                                      color: Colors.blue,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 6),
+                                                  LinearProgressIndicator(
+                                                    value: anime['progress'] ?? 0.0,
+                                                    backgroundColor: Colors.grey.shade300,
+                                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                                      Colors.blue,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Column(
+                                              children: [
+                                                Icon(Icons.arrow_upward, size: 20),
+                                                Icon(Icons.text_fields, size: 20),
+                                              ],
+                                            )
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    anime['status'],
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  LinearProgressIndicator(
-                                    value: anime['progress'],
-                                    backgroundColor: Colors.grey.shade300,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.blue,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Column(
-                              children: [
-                                Icon(Icons.arrow_upward, size: 20),
-                                Icon(Icons.text_fields, size: 20),
-                              ],
-                            )
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                          ),
               ),
             ],
           ),

@@ -6,6 +6,12 @@ import 'package:flutter_application_1/screen/splash_screen.dart';
 import 'package:flutter_application_1/service/preferences_service.dart';
 import 'screen/movie_list.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
+
+
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([
@@ -13,6 +19,9 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
   await PreferencesService.init();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+);
   runApp(MyApp());
 }
 

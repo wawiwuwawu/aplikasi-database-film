@@ -19,11 +19,31 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
   final KarakterService _apiService = KarakterService();
   final MovieApiService _movieService = MovieApiService();
   late Future<Karakter> _characterFuture;
+  bool _serverOffline = false;
 
   @override
   void initState() {
     super.initState();
-    _characterFuture = _apiService.getKarakterDetailId(widget.characterId);
+    _serverOffline = false;
+    _characterFuture = _loadCharacter();
+  }
+
+  Future<Karakter> _loadCharacter({bool fromRefresh = false}) async {
+    setState(() {
+      if (fromRefresh) _serverOffline = false;
+    });
+    try {
+      final karakter = await _apiService.getKarakterDetailId(widget.characterId);
+      setState(() {
+        _serverOffline = false;
+      });
+      return karakter;
+    } catch (e) {
+      setState(() {
+        _serverOffline = true;
+      });
+      rethrow;
+    }
   }
 
   @override
@@ -38,19 +58,48 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
           },
         ),
       ),
-      body: FutureBuilder<Karakter>(
-        future: _characterFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          final karakter = snapshot.data!;
-          return _buildContent(karakter);
-        },
-      ),
+      body: _serverOffline
+          ? RefreshIndicator(
+              onRefresh: () async {
+                setState(() {
+                  _characterFuture = _loadCharacter(fromRefresh: true);
+                });
+              },
+              child: ListView(
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.cloud_off, size: 48, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Server offline\nTarik ke bawah untuk mencoba lagi',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : FutureBuilder<Karakter>(
+              future: _characterFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: \\n${snapshot.error}'));
+                }
+                final karakter = snapshot.data!;
+                return _buildContent(karakter);
+              },
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.of(context).popUntil((route) => route.isFirst);
@@ -71,7 +120,7 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
           const SizedBox(height: 20),
           _buildCharacterInfo(karakter),
           const Divider(thickness: 1.5, height: 32),
-          if (karakter.movies?.isNotEmpty == true) _buildRelatedMovies(karakter.movies!),
+          if (karakter.movies.isNotEmpty) _buildRelatedMovies(karakter.movies),
         ],
       ),
     );
