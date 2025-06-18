@@ -2,13 +2,13 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/service/preferences_service.dart';
-import 'package:flutter_application_1/service/user_credential.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../service/movie_service.dart';
 import '../service/wishlist_service.dart';
 import '../model/movie_model.dart';
 import '../screen/movie_detail.dart';
 import '../screen/upload_data.dart';
+import '../model/user_model.dart';
 
 class MovieListScreen extends StatefulWidget {
   const MovieListScreen({super.key});
@@ -25,7 +25,8 @@ class _MovieListScreenState extends State<MovieListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   Timer? _debounce;
-  Credentials? _credentials;  bool _isLoading = false;
+  User? _user;  
+  bool _isLoading = false;
   bool _hasLoadedFromCache = false;
   bool _serverOffline = false; // Tambahkan state
   bool _isSearching = false;
@@ -40,12 +41,74 @@ class _MovieListScreenState extends State<MovieListScreen> {
   @override
   void initState() {
     super.initState();
-    _hasLoadedFromCache = false; // Reset agar cache selalu diprioritaskan saat kembali ke halaman
-    _getCredentials();
-    _loadMovies(fromRefresh: true); // Selalu refresh dari server saat pertama kali buka
+    _hasLoadedFromCache = false;
+    _getUserData();
+    _loadAllData(); // Ganti jadi satu fungsi untuk load film & wishlist bersamaan
     _searchController.addListener(_onSearchChanged);
     _scrollController.addListener(_onScroll);
-    _fetchUserWishlist();
+  }
+
+  Future<void> _loadAllData() async {
+    setState(() {
+      _isLoading = true;
+      _serverOffline = false;
+    });
+    try {
+      final fetchedUser = PreferencesService.getCredentials();
+      if (fetchedUser == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+      // Ambil data film dan wishlist user bersamaan
+      final results = await Future.wait([
+        _apiService.getMovies(query: '', page: 1),
+        WishlistService().fetchWishlist(),
+      ]);
+      final movies = results[0] as List<Movie>;
+      final wishlist = results[1] as List<Map<String, dynamic>>;
+      final Map<int, String> statusMap = {};
+      for (var item in wishlist) {
+        if (item['movie_id'] != null && item['status'] != null && item['status'] != '') {
+          statusMap[item['movie_id'] as int] = item['status'] as String;
+        }
+      }
+      for (var item in wishlist) {
+        if (item['movie_id'] == null && item['title'] != null && item['status'] != null && item['status'] != '' && movies.isNotEmpty) {
+          final matches = movies.where((m) => m.judul == item['title']);
+          if (matches.isNotEmpty) {
+            final movie = matches.first;
+            statusMap[movie.id] = item['status'] as String;
+          }
+        }
+      }
+      setState(() {
+        _movies
+          ..clear()
+          ..addAll(movies);
+        _userMovieStatus = statusMap;
+        _isLoading = false;
+        _serverOffline = false;
+        _currentPage = 1;
+        _hasMore = movies.length >= 20;
+      });
+      // Update cache
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_movies', Movie.encodeList(movies));
+      _hasLoadedFromCache = true;
+    } catch (e) {
+      print('Error saat memuat film/wishlist: $e');
+      setState(() {
+        _isLoading = false;
+        if (_movies.isEmpty) _serverOffline = true;
+      });
+      if (_movies.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat data film.')),
+        );
+      }
+    }
   }
 
   Future<void> _fetchUserWishlist() async {
@@ -129,12 +192,11 @@ class _MovieListScreenState extends State<MovieListScreen> {
     }
   }
 
-  Future _getCredentials() async {
-    final prefs = PreferencesService.getCredentials();
-    print(prefs);
-    if (prefs != null) {
+  Future<void> _getUserData() async {
+    final fetchedUser = PreferencesService.getCredentials();
+    if (fetchedUser != null) {
       setState(() {
-        _credentials = prefs;
+        _user = fetchedUser;
       });
     }
   }
@@ -435,7 +497,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
               ],
             ),
       floatingActionButton:
-          _credentials!.role == "customer"
+          _user!.role == "customer"
               ? const SizedBox.shrink()
               : Padding(
                 padding: const EdgeInsets.only(bottom: 80),
@@ -510,7 +572,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          margin: EdgeInsets.only(right: (_credentials != null && _credentials!.role == "admin") ? 8 : 0),
+                          margin: EdgeInsets.only(right: (_user != null && _user!.role == "admin") ? 8 : 0),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.85),
                             borderRadius: BorderRadius.circular(8),
@@ -522,13 +584,13 @@ class _MovieListScreenState extends State<MovieListScreen> {
                               ),
                             ],
                           ),
-                          child: _SaveButton(
+                          child: SaveButton(
                             movie: movie,
                             iconSize: 20,
                             initialStatus: _userMovieStatus[movie.id],
                           ),
                         ),
-                        if (_credentials != null && _credentials!.role == "admin")
+                        if (_user != null && _user!.role == "admin")
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.85),
@@ -634,17 +696,17 @@ class _MovieListScreenState extends State<MovieListScreen> {
   }
 }
 
-class _SaveButton extends StatefulWidget {
+class SaveButton extends StatefulWidget {
   final Movie movie;
   final double iconSize;
   final String? initialStatus;
-  const _SaveButton({required this.movie, this.iconSize = 24, this.initialStatus, Key? key}) : super(key: key);
+  const SaveButton({required this.movie, this.iconSize = 24, this.initialStatus, Key? key}) : super(key: key);
 
   @override
-  State<_SaveButton> createState() => _SaveButtonState();
+  State<SaveButton> createState() => SaveButtonState();
 }
 
-class _SaveButtonState extends State<_SaveButton> {
+class SaveButtonState extends State<SaveButton> {
   String? _status;
   bool _isLoading = false;
   final List<Map<String, dynamic>> _statusOptions = [
@@ -660,8 +722,8 @@ class _SaveButtonState extends State<_SaveButton> {
   }
 
   Future<void> _saveStatus(String value) async {
-    final credentials = PreferencesService.getCredentials();
-    if (credentials == null) {
+    final user = PreferencesService.getCredentials();
+    if (user == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Anda harus login untuk menyimpan status.')),

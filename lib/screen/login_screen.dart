@@ -3,7 +3,7 @@ import 'package:flutter_application_1/screen/main_screen.dart';
 import 'package:flutter_application_1/service/auth_service.dart';
 import 'package:flutter_application_1/screen/register_screen.dart';
 import 'package:flutter_application_1/service/preferences_service.dart';
-import 'package:flutter_application_1/service/user_credential.dart';
+import 'package:flutter_application_1/model/user_model.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -38,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Simpan token dan credentials ke SharedPreferences
   await PreferencesService.saveToken(result['token']);
-  final credentials = Credentials.fromJson(result['data']);
+  final credentials = User.fromJson(result['data']);
   await PreferencesService.saveCredentials(credentials);
 
   ScaffoldMessenger.of(context).showSnackBar(

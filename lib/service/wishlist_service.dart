@@ -1,15 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../service/preferences_service.dart';
-import '../service/user_credential.dart';
 
 class WishlistService {
   static const String baseUrl = 'https://api.wawunime.my.id/api/list/';
 
   Future<List<Map<String, dynamic>>> fetchWishlist() async {
-    final credentials = PreferencesService.getCredentials();
-    if (credentials == null) throw Exception('User not logged in');
-    final userId = credentials.id;
+    final user = PreferencesService.getCredentials();
+    if (user == null) throw Exception('User not logged in');
+    final userId = user.id;
     final url = Uri.parse('$baseUrl$userId');
     final response = await http.get(url);
     if (response.statusCode == 200) {
@@ -27,6 +26,7 @@ class WishlistService {
       return data.map<Map<String, dynamic>>((item) {
         final movie = item['movie'] ?? {};
         return {
+          'movie_id': movie['id'] ?? 0, // Pastikan gunakan 'id' dari movie
           'title': movie['judul'] ?? '',
           'status': item['status'] ?? '',
           'progress': 0.0, // API tidak ada progress, default 0
@@ -41,9 +41,9 @@ class WishlistService {
   }
 
   Future<void> saveUserMovieStatus({required int movieId, required String status}) async {
-    final credentials = PreferencesService.getCredentials();
-    if (credentials == null) throw Exception('User not logged in');
-    final userId = int.parse(credentials.id);
+    final user = PreferencesService.getCredentials();
+    if (user == null) throw Exception('User not logged in');
+    final userId = user.id;
     final response = await http.post(
       Uri.parse('https://api.wawunime.my.id/api/list'),
       headers: {'Content-Type': 'application/json'},

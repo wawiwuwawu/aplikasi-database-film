@@ -1,57 +1,76 @@
 import 'package:flutter/material.dart';
+import '../model/user_model.dart';
 
-class ProfileDetailScreen extends StatelessWidget {
-  final String name;
-  final String email;
-  final String? bio;
-  final String? profileUrl;
-  final String? createdAt;
+class ProfileDetailScreen extends StatefulWidget {
+  final User user;
+  const ProfileDetailScreen({Key? key, required this.user}) : super(key: key);
 
-  const ProfileDetailScreen({
-    Key? key,
-    required this.name,
-    required this.email,
-    this.bio,
-    this.profileUrl,
-    this.createdAt,
-  }) : super(key: key);
+  @override
+  State<ProfileDetailScreen> createState() => _ProfileDetailScreenState();
+}
+
+class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
+  late TextEditingController _nameController;
+  late TextEditingController _bioController;
+  bool isEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.user.name);
+    _bioController = TextEditingController(text: widget.user.bio ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _bioController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detail Profil'),
-      ),
+      appBar: AppBar(title: Text('Profil')),
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 24),
-            Center(
-              child: CircleAvatar(
-                radius: 50,
-                backgroundImage: profileUrl != null && profileUrl!.isNotEmpty
-                    ? NetworkImage(profileUrl!)
-                    : const AssetImage('assets/avatar.png') as ImageProvider,
+            TextField(
+              controller: _nameController,
+              enabled: isEditing,
+              decoration: InputDecoration(labelText: 'Nama'),
+            ),
+            SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Email: ${widget.user.email}', style: TextStyle(fontSize: 16)),
+                  if (widget.user.profileUrl != null && widget.user.profileUrl!.isNotEmpty)
+                    Text('Profile URL: ${widget.user.profileUrl}', style: TextStyle(fontSize: 16)),
+                  if (widget.user.createdAt != null)
+                    Text('Dibuat: ${widget.user.createdAt}', style: TextStyle(fontSize: 16)),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-            Text('Nama', style: TextStyle(fontWeight: FontWeight.bold)),
-            Text(name, style: TextStyle(fontSize: 18)),
-            const SizedBox(height: 16),
-            Text('Email', style: TextStyle(fontWeight: FontWeight.bold)),
-            Text(email, style: TextStyle(fontSize: 18)),
-            if (bio != null && bio!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text('Bio', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text(bio!, style: TextStyle(fontSize: 18)),
-            ],
-            if (createdAt != null && createdAt!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text('Dibuat pada', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text(createdAt!, style: TextStyle(fontSize: 18)),
-            ],
+            SizedBox(height: 16),
+            TextField(
+              controller: _bioController,
+              enabled: isEditing,
+              decoration: InputDecoration(labelText: 'Bio'),
+              maxLines: 3,
+            ),
+            SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  isEditing = !isEditing;
+                });
+              },
+              child: Text(isEditing ? 'Simpan' : 'Edit'),
+            ),
           ],
         ),
       ),

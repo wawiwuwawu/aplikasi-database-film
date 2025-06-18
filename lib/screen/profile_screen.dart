@@ -4,6 +4,7 @@ import 'package:flutter_application_1/service/preferences_service.dart';
 import 'profile_detail_screen.dart';
 import 'about_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../model/user_model.dart';
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -11,12 +12,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String name = "";
-  String email = "";
-  String? role;
-  String? bio;
-  String? profileUrl;
-  String? createdAt;
+  User? user;
 
   @override
   void initState() {
@@ -25,24 +21,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _getUserData() async {
-    final credentials = PreferencesService.getCredentials();
-    if (credentials != null) {
+    final creds = await PreferencesService.getCredentials();
+    if (mounted) {
       setState(() {
-        name = credentials.name;
-        email = credentials.email;
-        role = credentials.role;
-        bio = credentials.bio;
-        profileUrl = credentials.profileUrl;
-        createdAt = credentials.createdAt;
+        user = creds;
       });
     }
-    await Future.delayed(const Duration(milliseconds: 300));
   }
 
   @override
   Widget build(BuildContext context) {
+    final name = user?.name ?? '-';
+    final email = user?.email ?? '-';
+    final profileUrl = user?.profileUrl;
+
+    final List<Map<String, dynamic>> menuItems = [
+      {
+        'icon': Icons.person,
+        'title': 'Profile',
+        'onTap': () {
+          if (user == null) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProfileDetailScreen(user: user!),
+            ),
+          );
+        },
+      },
+      {
+        'icon': Icons.error_outline,
+        'title': 'About',
+        'onTap': () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => AboutScreen()));
+        },
+      },
+      {
+        'icon': Icons.help_outline,
+        'title': 'FAQ',
+        'onTap': () async {
+          final url = Uri.parse('https://web.wawunime.my.id/html/faq.html');
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        },
+      },
+    ];
+
     return Scaffold(
-      extendBody: true,
+      backgroundColor: const Color(0xFFF9F1FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -52,108 +77,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
               await PreferencesService.clearToken();
               await PreferencesService.clearCredentials();
               await PreferencesService.clearMovieCache();
-
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => LoginScreen()),
-                (route) => false,
-              );
+              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
             },
             icon: Icon(Icons.logout, color: Colors.black),
-            label: Text("LogOut", style: TextStyle(color: Colors.black)),
+            label: Text('LogOut', style: TextStyle(color: Colors.black)),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
-            CircleAvatar(
-              radius: 50,
-              backgroundImage: AssetImage(
-                'assets/avatar.png',
-              ), // Ganti path ke gambar kamu
-            ),
-            const SizedBox(height: 10),
-            Text(
-              name,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-            ),
-            Text(email, style: TextStyle(color: Colors.black54)),
-            const SizedBox(height: 30),
-            buildMenuItem(Icons.person_outline, "Profile"),
-            buildMenuItem(Icons.error_outline, "About"),
-            buildMenuItem(Icons.help_outline, "FAQ"),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget buildMenuItem(IconData icon, String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8),
-      child: InkWell(
-        onTap: title == "Profile"
-            ? () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProfileDetailScreen(
-                      name: name,
-                      email: email,
-                      bio: bio,
-                      profileUrl: profileUrl,
-                      createdAt: createdAt,
-                    ),
+      body: user == null
+          ? Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                SizedBox(height: 32),
+                Center(
+                  child: CircleAvatar(
+                    radius: 56,
+                    backgroundColor: Colors.purple[100],
+                    backgroundImage: (profileUrl != null && profileUrl.isNotEmpty)
+                        ? NetworkImage(profileUrl)
+                        : null,
+                    child: (profileUrl == null || profileUrl.isEmpty)
+                        ? Icon(Icons.person, size: 56, color: Colors.white)
+                        : null,
                   ),
-                );
-              }
-            : title == "About"
-                ? () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AboutScreen(),
-                      ),
-                    );
-                  }
-                : title == "FAQ"
-                    ? () async {
-                        // Membuka link FAQ di browser
-                        // Pastikan url_launcher sudah ada di pubspec.yaml
-                        final url = Uri.parse('https://web.wawunime.my.id/html/faq.html');
-                        // ignore: deprecated_member_use
-                        await launchUrl(url, mode: LaunchMode.externalApplication);
-                      }
-                    : null,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Color(0xFFF9F1FD),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 16),
-              Text(
-                title,
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
-              ),
-            ],
-          ),
-        ),
-      ),
+                SizedBox(height: 16),
+                Text(name, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                SizedBox(height: 4),
+                Text(email, style: TextStyle(fontSize: 16, color: Colors.grey[700])),
+                SizedBox(height: 24),
+                ...menuItems.map((item) => Card(
+                      margin: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      child: ListTile(
+                        leading: Icon(item['icon'], color: Colors.purple),
+                        title: Text(item['title']),
+                        onTap: item['onTap'],
+                      ),
+                    )),
+              ],
+            ),
     );
   }
 }

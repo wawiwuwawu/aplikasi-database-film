@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter_application_1/service/user_credential.dart';
+import 'package:flutter_application_1/model/user_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PreferencesService {
@@ -21,17 +21,17 @@ class PreferencesService {
   }
 
   /// Simpan credentials ke SharedPreferences
-  static Future<void> saveCredentials(Credentials credentials) async {
+  static Future<void> saveCredentials(User credentials) async {
     final String credentialsJson = jsonEncode(credentials.toJson());
     await _preferences?.setString('credentials', credentialsJson);
   }
 
   /// Ambil credentials dari SharedPreferences
-  static Credentials? getCredentials() {
+  static User? getCredentials() {
     final String? credentialsString = _preferences?.getString('credentials');
     if (credentialsString != null) {
       final Map<String, dynamic> json = jsonDecode(credentialsString);
-      return Credentials.fromJson(json);
+      return User.fromJson(json);
     }
     return null;
   }

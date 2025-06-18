@@ -38,6 +38,10 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue
         ),
       home: SplashScreen(),
+      routes: {
+        '/login': (context) => LoginScreen(),
+        // ...tambahkan route lain jika perlu
+      },
     );
   }
 }
