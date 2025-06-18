@@ -34,7 +34,7 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
     super.dispose();
   }
 
-  Future<void> _fetchWishlist() async {
+  Future<void> _fetchWishlist({int retry = 2}) async {
     setState(() {
       _isLoading = true;
       _error = null;
@@ -46,6 +46,10 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
         _isLoading = false;
       });
     } catch (e) {
+      if (retry > 0) {
+        await Future.delayed(const Duration(milliseconds: 700));
+        return _fetchWishlist(retry: retry - 1);
+      }
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -238,6 +242,7 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
                                                 ),
                                                 iconSize: 20,
                                                 initialStatus: anime['status'],
+                                                onStatusChanged: (_) => _fetchWishlist(),
                                               ),
                                             ],
                                           ),

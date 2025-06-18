@@ -700,7 +700,8 @@ class SaveButton extends StatefulWidget {
   final Movie movie;
   final double iconSize;
   final String? initialStatus;
-  const SaveButton({required this.movie, this.iconSize = 24, this.initialStatus, Key? key}) : super(key: key);
+  final void Function(String)? onStatusChanged;
+  const SaveButton({required this.movie, this.iconSize = 24, this.initialStatus, this.onStatusChanged, Key? key}) : super(key: key);
 
   @override
   State<SaveButton> createState() => SaveButtonState();
@@ -719,6 +720,16 @@ class SaveButtonState extends State<SaveButton> {
   void initState() {
     super.initState();
     _status = widget.initialStatus;
+  }
+
+  @override
+  void didUpdateWidget(covariant SaveButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialStatus != oldWidget.initialStatus) {
+      setState(() {
+        _status = widget.initialStatus;
+      });
+    }
   }
 
   Future<void> _saveStatus(String value) async {
@@ -741,6 +752,9 @@ class SaveButtonState extends State<SaveButton> {
       setState(() {
         _status = value;
       });
+      if (widget.onStatusChanged != null) {
+        widget.onStatusChanged!(value);
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Status film: ' + _statusLabel(value)),

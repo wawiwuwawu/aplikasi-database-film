@@ -34,44 +34,54 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       appBar: AppBar(title: Text('Profil')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameController,
-              enabled: isEditing,
-              decoration: InputDecoration(labelText: 'Nama'),
-            ),
-            SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Email: ${widget.user.email}', style: TextStyle(fontSize: 16)),
-                  if (widget.user.profileUrl != null && widget.user.profileUrl!.isNotEmpty)
-                    Text('Profile URL: ${widget.user.profileUrl}', style: TextStyle(fontSize: 16)),
-                  if (widget.user.createdAt != null)
-                    Text('Dibuat: ${widget.user.createdAt}', style: TextStyle(fontSize: 16)),
-                ],
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: widget.user.profileUrl != null && widget.user.profileUrl!.isNotEmpty
+                    ? CircleAvatar(
+                        radius: 48,
+                        backgroundImage: NetworkImage(widget.user.profileUrl!),
+                      )
+                    : CircleAvatar(
+                        radius: 48,
+                        child: Icon(Icons.person, size: 48),
+                      ),
               ),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: _bioController,
-              enabled: isEditing,
-              decoration: InputDecoration(labelText: 'Bio'),
-              maxLines: 3,
-            ),
-            SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  isEditing = !isEditing;
-                });
-              },
-              child: Text(isEditing ? 'Simpan' : 'Edit'),
-            ),
-          ],
+              SizedBox(height: 24),
+              TextField(
+                controller: _nameController,
+                enabled: isEditing,
+                decoration: InputDecoration(labelText: 'Nama'),
+              ),
+              SizedBox(height: 16),
+              Text('Email: ${widget.user.email}', style: TextStyle(fontSize: 16)),
+              if (widget.user.createdAt != null)
+                Text('Dibuat: ${widget.user.createdAt}', style: TextStyle(fontSize: 16)),
+              SizedBox(height: 16),
+              _bioController.text.isEmpty && !isEditing
+                  ? Text('Belum ada bio', style: TextStyle(color: Colors.grey))
+                  : TextField(
+                      controller: _bioController,
+                      enabled: isEditing,
+                      decoration: InputDecoration(
+                        labelText: 'Bio',
+                        hintText: 'Belum ada bio',
+                      ),
+                      maxLines: 3,
+                    ),
+              SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    isEditing = !isEditing;
+                  });
+                },
+                child: Text(isEditing ? 'Simpan' : 'Edit'),
+              ),
+            ],
+          ),
         ),
       ),
     );

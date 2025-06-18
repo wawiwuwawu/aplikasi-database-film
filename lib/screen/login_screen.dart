@@ -38,7 +38,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Simpan token dan credentials ke SharedPreferences
   await PreferencesService.saveToken(result['token']);
-  final credentials = User.fromJson(result['data']);
+  dynamic data = result['data'];
+  User credentials;
+  if (data is List && data.isNotEmpty) {
+    credentials = User.fromJson(data[0]);
+  } else if (data is Map<String, dynamic>) {
+    credentials = User.fromJson(data);
+  } else {
+    throw Exception('Data user tidak ditemukan pada response.');
+  }
   await PreferencesService.saveCredentials(credentials);
 
   ScaffoldMessenger.of(context).showSnackBar(
