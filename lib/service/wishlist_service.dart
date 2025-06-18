@@ -39,4 +39,35 @@ class WishlistService {
       throw Exception('Failed to load wishlist');
     }
   }
+
+  Future<void> saveUserMovieStatus({required int movieId, required String status}) async {
+    final credentials = PreferencesService.getCredentials();
+    if (credentials == null) throw Exception('User not logged in');
+    final userId = int.parse(credentials.id);
+    final response = await http.post(
+      Uri.parse('https://api.wawunime.my.id/api/list'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'userId': userId,
+        'movieId': movieId,
+        'status': status,
+      }),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      print('DEBUG response.body: ' + response.body);
+      String msg = 'Gagal menyimpan status movie';
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map && decoded['message'] != null) {
+          msg = decoded['message'].toString();
+        } else if (decoded is String) {
+          msg = decoded;
+        }
+      } catch (_) {
+        msg = response.body;
+      }
+      throw Exception(msg);
+    }
+    return;
+  }
 }

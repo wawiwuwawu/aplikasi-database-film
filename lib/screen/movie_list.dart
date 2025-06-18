@@ -5,6 +5,7 @@ import 'package:flutter_application_1/service/preferences_service.dart';
 import 'package:flutter_application_1/service/user_credential.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../service/movie_service.dart';
+import '../service/wishlist_service.dart';
 import '../model/movie_model.dart';
 import '../screen/movie_detail.dart';
 import '../screen/upload_data.dart';
@@ -609,12 +610,55 @@ class _SaveButton extends StatefulWidget {
 
 class _SaveButtonState extends State<_SaveButton> {
   String? _status;
-
+  bool _isLoading = false;
   final List<Map<String, dynamic>> _statusOptions = [
-    {'label': 'Disimpan', 'value': 'saved', 'icon': Icons.bookmark},
-    {'label': 'Ditonton', 'value': 'watching', 'icon': Icons.play_circle},
-    {'label': 'Sudah Ditonton', 'value': 'watched', 'icon': Icons.check_circle},
+    {'label': 'Disimpan', 'value': 'disimpan', 'icon': Icons.bookmark},
+    {'label': 'Ditonton', 'value': 'ditonton', 'icon': Icons.play_circle},
+    {'label': 'Sudah Ditonton', 'value': 'sudah ditonton', 'icon': Icons.check_circle},
   ];
+
+  Future<void> _saveStatus(String value) async {
+    final credentials = PreferencesService.getCredentials();
+    if (credentials == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Anda harus login untuk menyimpan status.')),
+        );
+      }
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await WishlistService().saveUserMovieStatus(
+        movieId: widget.movie.id,
+        status: value,
+      );
+      if (!mounted) return;
+      setState(() {
+        _status = value;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Status film: ' + _statusLabel(value)),
+          backgroundColor: Colors.green,
+          duration: const Duration(milliseconds: 1200),
+        ),
+      );
+    } catch (e, s) {
+      // print('DEBUG error: ' + e.toString());
+      // print('DEBUG stack: ' + s.toString());
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menyimpan status: ' + e.toString()),
+          backgroundColor: Colors.red,
+          duration: const Duration(milliseconds: 1800),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -637,33 +681,31 @@ class _SaveButtonState extends State<_SaveButton> {
         icon = Icons.bookmark_border;
         color = Colors.grey;
     }
-    return PopupMenuButton<String>(
-      icon: Icon(icon, color: color, size: widget.iconSize),
-      tooltip: 'Setel status film',
-      constraints: const BoxConstraints(minWidth: 0, minHeight: 0), // Hilangkan padding default
-      padding: EdgeInsets.zero, // Hilangkan padding default
-      onSelected: (value) {
-        setState(() {
-          _status = value;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Status film: ' + _statusLabel(value)),
-            duration: const Duration(milliseconds: 800), // lebih cepat
-          ),
-        );
-      },
-      itemBuilder: (context) => _statusOptions.map((item) => PopupMenuItem<String>(
-        value: item['value'] as String,
-        child: Row(
-          children: [
-            Icon(item['icon'] as IconData, color: _status == item['value'] ? Theme.of(context).colorScheme.primary : Colors.grey, size: 20),
-            const SizedBox(width: 8),
-            Text(item['label'] as String),
-          ],
-        ),
-      )).toList(),
-    );
+    return _isLoading
+        ? SizedBox(
+            width: widget.iconSize,
+            height: widget.iconSize,
+            child: const CircularProgressIndicator(strokeWidth: 2),
+          )
+        : PopupMenuButton<String>(
+            icon: Icon(icon, color: color, size: widget.iconSize),
+            tooltip: 'Setel status film',
+            constraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+            padding: EdgeInsets.zero,
+            onSelected: (value) {
+              _saveStatus(value);
+            },
+            itemBuilder: (context) => _statusOptions.map((item) => PopupMenuItem<String>(
+              value: item['value'] as String,
+              child: Row(
+                children: [
+                  Icon(item['icon'] as IconData, color: _status == item['value'] ? Theme.of(context).colorScheme.primary : Colors.grey, size: 20),
+                  const SizedBox(width: 8),
+                  Text(item['label'] as String),
+                ],
+              ),
+            )).toList(),
+          );
   }
 
   String _statusLabel(String value) {

@@ -492,7 +492,21 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                   )
                 : const Icon(Icons.movie, size: 50),
             title: Text(movie.judul),
-            onTap: () => _selectMovie(movie),
+            onTap: () async {
+              setState(() { _isLoading = true; });
+              try {
+                final detailMovie = await _movieApiService.getMovieDetail(movie.id);
+                _selectMovie(detailMovie);
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Gagal mengambil detail movie: $e'), backgroundColor: Colors.red),
+                  );
+                }
+              } finally {
+                if (mounted) setState(() { _isLoading = false; });
+              }
+            },
           );
         },
       ),
