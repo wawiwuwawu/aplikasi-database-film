@@ -1,5 +1,5 @@
 // Ganti dengan deskripsi aplikasi Anda
-const String appName = 'Nama Aplikasi';
+const String appName = 'Weebase';
 const String appFullDescription = '''
 Aplikasi ini adalah ...
 

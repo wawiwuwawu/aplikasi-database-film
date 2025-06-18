@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/screen/login_screen.dart';
-import 'package:flutter_application_1/service/auth_service.dart'; // pastikan import AuthService kamu benar
+// Ganti dengan path yang benar untuk screen verifikasi OTP Anda
+import 'package:flutter_application_1/screen/otp_verification_screen.dart';
+import 'package:flutter_application_1/service/auth_service.dart';
 
+// Anda mungkin ingin mengubah nama file ini menjadi login_screen.dart
+// karena sekarang fungsinya lebih ke arah login/registrasi.
 class RegisterScreen extends StatefulWidget {
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
@@ -11,45 +14,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
   final AuthService _authService = AuthService();
-
   bool _isLoading = false;
 
-  void _register() async {
+  void _handleRegister() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+    final password = _passwordController.text;
 
-    // Validasi nama
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Nama tidak boleh kosong')));
+    // Validasi
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Semua field wajib diisi!')),
+      );
       return;
     }
-
-    // Validasi email format
     final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
     if (!emailRegex.hasMatch(email)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Email tidak valid')));
-      return;
-    }
-
-    // Validasi password
-    if (password.length < 6) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Password minimal 6 karakter')));
-      return;
-    }
-
-    final passwordRegex = RegExp(r'^(?=.*[a-zA-Z])(?=.*\d).+$');
-    if (!passwordRegex.hasMatch(password)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Password harus mengandung huruf dan angka')),
+        const SnackBar(content: Text('Format email tidak valid')),
+      );
+      return;
+    }
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password minimal 6 karakter')),
       );
       return;
     }
@@ -59,24 +48,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      final result = await _authService.register(name, email, password);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message']+" : Silahkan Login Terlebih dahulu" ?? 'Registrasi Berhasil : Silahkan Login Terlebih dahulu')),
-      );
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => LoginScreen()),
-      );
+      final response = await _authService.register(name, email, password);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kode OTP telah dikirim ke email Anda.')),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OtpVerificationScreen(email: email),
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -92,7 +85,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Logo
                 Image.asset('assets/main_logo.png', height: 100),
                 const SizedBox(height: 10),
-                Text(
+                const Text(
                   'MYS',
                   style: TextStyle(
                     fontSize: 20,
@@ -100,7 +93,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     letterSpacing: 2,
                   ),
                 ),
-                Text(
+                const Text(
                   'YOUR MOVIE & SERIES',
                   style: TextStyle(
                     fontSize: 12,
@@ -109,7 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 30),
-                Text(
+                const Text(
                   'REGISTER',
                   style: TextStyle(
                     fontSize: 24,
@@ -128,35 +121,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     child: Column(
                       children: [
-                        // Name Field
                         TextField(
                           controller: _nameController,
-                          decoration: InputDecoration(
-                            labelText: 'Name',
-                            hintText: 'Username',
+                          decoration: const InputDecoration(
+                            labelText: 'Nama',
+                            hintText: 'Masukkan nama lengkap',
                           ),
                         ),
                         const SizedBox(height: 20),
-                        // Email Field
                         TextField(
                           controller: _emailController,
-                          decoration: InputDecoration(
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
                             labelText: 'Email',
-                            hintText: 'Alex@gmail.com',
+                            hintText: 'Masukkan email Anda',
                           ),
                         ),
                         const SizedBox(height: 20),
-                        // Password Field
                         TextField(
                           controller: _passwordController,
                           obscureText: true,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: 'Password',
-                            hintText: '********',
+                            hintText: 'Masukkan password',
                           ),
                         ),
                         const SizedBox(height: 20),
-                        // Register Button
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
@@ -167,52 +157,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            onPressed: _isLoading ? null : _register,
-                            child:
-                                _isLoading
-                                    ? CircularProgressIndicator(
-                                      color: Colors.white,
-                                    )
-                                    : const Text(
-                                      'Sign Up',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        // Forgot Password
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton(
-                            onPressed: () {},
-                            child: const Text(
-                              'Forgot password?',
-                              style: TextStyle(color: Colors.black54),
-                            ),
+                            onPressed: _isLoading ? null : _handleRegister,
+                            child: _isLoading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : const Text(
+                                    'Daftar & Kirim Kode OTP',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                // Sign In Link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text("Already Have An Account? "),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => LoginScreen(),
-                          ),
-                        );
-                      },
-                      child: const Text("Sign In"),
-                    ),
-                  ],
+                const SizedBox(height: 20),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 40.0),
+                  child: Text(
+                    'Masukkan nama, email, dan password untuk mendaftar. Kami akan mengirimkan kode verifikasi ke email Anda.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
               ],
             ),
@@ -222,3 +189,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
+

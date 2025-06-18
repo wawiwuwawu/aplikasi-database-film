@@ -5,52 +5,55 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AuthService {
   static const baseUrl = 'https://api.wawunime.my.id/api/auth';
 
-Future<Map<String, dynamic>> register(String username, String email, String password) async {
-  final url = Uri.parse('$baseUrl/register');
+  /// Registers a new user and triggers OTP sending in one step.
+  /// Backend endpoint: POST /register
+  /// Required fields: username, email, password
+  /// On success, backend sends OTP to the email and returns a response indicating pending verification.
+  Future<Map<String, dynamic>> register(String username, String email, String password) async {
+    final url = Uri.parse('$baseUrl/register');
 
-  try {
-    final response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "name": username,
-        "email": email,
-        "password": password,
-      }),
-    );
-
-    final statusCode = response.statusCode;
-    final responseBody = response.body;
-
-    Map<String, dynamic> responseData;
     try {
-      responseData = jsonDecode(responseBody);
-    } catch (e) {
-      throw Exception('Server tidak mengembalikan data JSON');
-    }
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "name": username,
+          "email": email,
+          "password": password,
+        }),
+      );
 
-    if (statusCode == 200 || statusCode == 201) {
-      // Login berhasil
-      return responseData;
-    } else {
-      // Error dari server
-      if (responseData.containsKey('errors')) {
-        List errors = responseData['errors'];
-        String errorMessages = errors.map((e) => e['msg']).join('\n');
-        throw Exception(errorMessages);
-      } else if (responseData.containsKey('massage')) {
-        throw Exception(responseData['massage']);
-      } else if (responseData.containsKey('message')) {
-        throw Exception(responseData['message']);
-      } else {
-        throw Exception('Terjadi kesalahan saat registrasi');
+      final statusCode = response.statusCode;
+      final responseBody = response.body;
+
+      Map<String, dynamic> responseData;
+      try {
+        responseData = jsonDecode(responseBody);
+      } catch (e) {
+        throw Exception('Server tidak mengembalikan data JSON');
       }
-    }
-  } catch (e) {
-    throw Exception('Gagal melakukan registrasi: $e');
-  }
-}
 
+      if (statusCode == 200 || statusCode == 201) {
+        // Registration successful, OTP sent
+        return responseData;
+      } else {
+        // Error from server
+        if (responseData.containsKey('errors')) {
+          List errors = responseData['errors'];
+          String errorMessages = errors.map((e) => e['msg']).join('\n');
+          throw Exception(errorMessages);
+        } else if (responseData.containsKey('massage')) {
+          throw Exception(responseData['massage']);
+        } else if (responseData.containsKey('message')) {
+          throw Exception(responseData['message']);
+        } else {
+          throw Exception('Terjadi kesalahan saat registrasi');
+        }
+      }
+    } catch (e) {
+      throw Exception('Gagal melakukan registrasi: $e');
+    }
+  }
 
   // Login function
   Future<Map<String, dynamic>> login(String email, String password) async {
@@ -66,7 +69,7 @@ Future<Map<String, dynamic>> register(String username, String email, String pass
       final responseData = jsonDecode(response.body);
 
       if (response.statusCode == 200 && responseData['success'] == true) {
-      print(responseData);
+        print(responseData);
 
         return responseData;
       } else {
@@ -74,7 +77,7 @@ Future<Map<String, dynamic>> register(String username, String email, String pass
         throw Exception(responseData['message'] ?? 'Login gagal');
       }
     } catch (e) {
-        print(e);
+      print(e);
 
       throw Exception('Failed to login: $e');
     }
@@ -122,6 +125,61 @@ Future<Map<String, dynamic>> register(String username, String email, String pass
       final responseData = jsonDecode(response.body);
 
       throw Exception(responseData["error"].toString());
+    }
+  }
+
+  // Future<bool> requestOtp(String email) async {
+  //   final url = Uri.parse('$baseUrl/send-otp');
+  //   print('Requesting OTP to: $url'); // Log untuk debugging
+
+  //   try {
+  //     final response = await http.post(
+  //       url,
+  //       headers: {'Content-Type': 'application/json'},
+  //       body: jsonEncode({'email': email}),
+  //     );
+
+  //     if (response.statusCode == 200) {
+  //       print('Service: Permintaan OTP sukses!');
+  //       return true;
+  //     } else {
+  //       print('Service: Gagal meminta OTP - ${response.statusCode}');
+  //       print('Service: Body - ${response.body}');
+  //       return false;
+  //     }
+  //   } catch (e) {
+  //     print('Service: Error koneksi saat meminta OTP - $e');
+  //     return false;
+  //   }
+  // }
+
+  Future<String?> verifyOtp(String email, String otp) async {
+    final url = Uri.parse('$baseUrl/verify-otp');
+    print('Verifying OTP to: $url');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'otp': otp,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final String token = body['token'];
+        print('Service: Verifikasi sukses, token diterima!');
+        return token;
+      } else {
+        print('Service: Gagal verifikasi - ${response.statusCode}');
+        print('Service: Body - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('Service: Error koneksi saat verifikasi - $e');
+      return null;
     }
   }
 }
