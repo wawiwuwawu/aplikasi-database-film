@@ -35,6 +35,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   int _currentPage = 1;
   bool _isLoadingMore = false;
   bool _hasMore = true;
+  Map<int, String> _userMovieStatus = {}; // movieId -> status
 
   @override
   void initState() {
@@ -44,6 +45,34 @@ class _MovieListScreenState extends State<MovieListScreen> {
     _loadMovies(fromRefresh: true); // Selalu refresh dari server saat pertama kali buka
     _searchController.addListener(_onSearchChanged);
     _scrollController.addListener(_onScroll);
+    _fetchUserWishlist();
+  }
+
+  Future<void> _fetchUserWishlist() async {
+    try {
+      final wishlist = await WishlistService().fetchWishlist();
+      final Map<int, String> statusMap = {};
+      for (var item in wishlist) {
+        if (item['movie_id'] != null && item['status'] != null && item['status'] != '') {
+          statusMap[item['movie_id'] as int] = item['status'] as String;
+        }
+      }
+      // Fallback jika tidak ada movie_id, gunakan title mapping (tidak disarankan, sebaiknya backend kembalikan movie_id)
+      for (var item in wishlist) {
+        if (item['movie_id'] == null && item['title'] != null && item['status'] != null && item['status'] != '' && _movies.isNotEmpty) {
+          final matches = _movies.where((m) => m.judul == item['title']);
+          if (matches.isNotEmpty) {
+            final movie = matches.first;
+            statusMap[movie.id] = item['status'] as String;
+          }
+        }
+      }
+      setState(() {
+        _userMovieStatus = statusMap;
+      });
+    } catch (e) {
+      // ignore error
+    }
   }
 
   @override
@@ -53,7 +82,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
     _scrollController.dispose();
     super.dispose();
   }
-  void performSearch(String query) async {
+  void performSearch(String query, {bool silent = false}) async {
     if (query.isEmpty || query.length < 3) {
       setState(() {
         _suggestions.clear();
@@ -177,6 +206,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
         // Update cache
         await prefs.setString('cached_movies', Movie.encodeList(movies));
         _hasLoadedFromCache = true;
+        await _fetchUserWishlist(); // <-- Tambahkan ini setelah _movies diisi
       } catch (e) {
         print('Error saat memuat film: $e');
         if (_movies.isEmpty) {
@@ -198,6 +228,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
       setState(() {
         _isLoading = false;
       });
+      await _fetchUserWishlist(); // <-- Tambahkan ini juga jika tidak refresh
     }
   }
   void _onSearchChanged() {
@@ -491,7 +522,11 @@ class _MovieListScreenState extends State<MovieListScreen> {
                               ),
                             ],
                           ),
-                          child: _SaveButton(movie: movie, iconSize: 20),
+                          child: _SaveButton(
+                            movie: movie,
+                            iconSize: 20,
+                            initialStatus: _userMovieStatus[movie.id],
+                          ),
                         ),
                         if (_credentials != null && _credentials!.role == "admin")
                           Container(
@@ -602,7 +637,8 @@ class _MovieListScreenState extends State<MovieListScreen> {
 class _SaveButton extends StatefulWidget {
   final Movie movie;
   final double iconSize;
-  const _SaveButton({required this.movie, this.iconSize = 24, Key? key}) : super(key: key);
+  final String? initialStatus;
+  const _SaveButton({required this.movie, this.iconSize = 24, this.initialStatus, Key? key}) : super(key: key);
 
   @override
   State<_SaveButton> createState() => _SaveButtonState();
@@ -616,6 +652,12 @@ class _SaveButtonState extends State<_SaveButton> {
     {'label': 'Ditonton', 'value': 'ditonton', 'icon': Icons.play_circle},
     {'label': 'Sudah Ditonton', 'value': 'sudah ditonton', 'icon': Icons.check_circle},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _status = widget.initialStatus;
+  }
 
   Future<void> _saveStatus(String value) async {
     final credentials = PreferencesService.getCredentials();
@@ -644,9 +686,8 @@ class _SaveButtonState extends State<_SaveButton> {
           duration: const Duration(milliseconds: 1200),
         ),
       );
-    } catch (e, s) {
-      // print('DEBUG error: ' + e.toString());
-      // print('DEBUG stack: ' + s.toString());
+    } catch (e) {
+      print('DEBUG error: ' + e.toString());
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -665,15 +706,15 @@ class _SaveButtonState extends State<_SaveButton> {
     IconData icon;
     Color color;
     switch (_status) {
-      case 'saved':
+      case 'disimpan':
         icon = Icons.bookmark;
         color = Colors.blueAccent;
         break;
-      case 'watching':
+      case 'ditonton':
         icon = Icons.play_circle;
         color = Colors.orange;
         break;
-      case 'watched':
+      case 'sudah ditonton':
         icon = Icons.check_circle;
         color = Colors.green;
         break;
