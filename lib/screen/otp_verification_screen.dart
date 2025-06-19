@@ -83,23 +83,30 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   Future<void> _handleResendOtp() async {
-    setState(() { _isLoading = true; });
-    try {
-      // Karena endpoint /register sekarang juga mengirim OTP,
-      // kita bisa memanggil ulang register dengan email yang sama sebagai username dan password dummy.
-      // Atau, jika backend punya endpoint khusus resend, gunakan itu.
-      await _authService.register(_email, _email, 'dummyPassword123');
+  setState(() { _isLoading = true; });
+
+  try {
+    final bool isSuccess = await _authService.resendOtp(widget.email);
+
+    if (isSuccess && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kode OTP berhasil dikirim ulang.')),
+        const SnackBar(content: Text('Kode OTP baru telah berhasil dikirim.')),
       );
       _startCooldown();
-    } catch (e) {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal mengirim ulang kode OTP: ${e.toString()}')),
+        const SnackBar(content: Text('Gagal mengirim ulang kode OTP.')),
       );
-    } finally {
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Terjadi error: ${e.toString()}')),
+    );
+  } finally {
+    if (mounted) {
       setState(() { _isLoading = false; });
     }
+  }
   }
 
   @override

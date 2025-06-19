@@ -73,8 +73,11 @@ class AuthService {
 
         return responseData;
       } else {
-        print(responseData);
-        throw Exception(responseData['message'] ?? 'Login gagal');
+        if (response.statusCode == 403) {
+          throw Exception(responseData['message'] ?? 'Akun Anda belum diverifikasi.');
+        } else {
+          throw Exception(responseData['message'] ?? 'Email atau password salah.');
+        }
       }
     } catch (e) {
       print(e);
@@ -128,31 +131,6 @@ class AuthService {
     }
   }
 
-  // Future<bool> requestOtp(String email) async {
-  //   final url = Uri.parse('$baseUrl/send-otp');
-  //   print('Requesting OTP to: $url'); // Log untuk debugging
-
-  //   try {
-  //     final response = await http.post(
-  //       url,
-  //       headers: {'Content-Type': 'application/json'},
-  //       body: jsonEncode({'email': email}),
-  //     );
-
-  //     if (response.statusCode == 200) {
-  //       print('Service: Permintaan OTP sukses!');
-  //       return true;
-  //     } else {
-  //       print('Service: Gagal meminta OTP - ${response.statusCode}');
-  //       print('Service: Body - ${response.body}');
-  //       return false;
-  //     }
-  //   } catch (e) {
-  //     print('Service: Error koneksi saat meminta OTP - $e');
-  //     return false;
-  //   }
-  // }
-
   Future<String?> verifyOtp(String email, String otp) async {
     final url = Uri.parse('$baseUrl/verify-otp');
     print('Verifying OTP to: $url');
@@ -181,5 +159,50 @@ class AuthService {
       print('Service: Error koneksi saat verifikasi - $e');
       return null;
     }
+  }
+
+  Future<bool> resendOtp(String email) async {
+    final url = Uri.parse('$baseUrl/resend-otp');
+    print('Resending OTP to: $url');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+
+      // Status 200 OK berarti backend berhasil mengirim ulang
+      if (response.statusCode == 200) {
+        print('Service: OTP berhasil dikirim ulang.');
+        return true;
+      } else {
+        print('Service: Gagal mengirim ulang OTP - ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Service: Error koneksi saat kirim ulang OTP - $e');
+      return false;
+    }
+  }
+
+  Future<bool> forgotPassword(String email) async {
+      final url = Uri.parse('$baseUrl/forgot-password');
+      try {
+          final response = await http.post(url, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'email': email}));
+          return response.statusCode == 200;
+      } catch (e) {
+          return false;
+      }
+  }
+
+  Future<bool> resetPassword({required String email, required String otp, required String newPassword}) async {
+      final url = Uri.parse('$baseUrl/reset-password');
+      try {
+          final response = await http.post(url, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'email': email, 'otp': otp, 'newPassword': newPassword}));
+          return response.statusCode == 200;
+      } catch (e) {
+          return false;
+      }
   }
 }
