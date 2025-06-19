@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/service/auth_service.dart';
-import 'package:flutter_application_1/screen/reset_password_screen.dart';
-import 'package:flutter_application_1/screen/login_screen.dart';
+import 'package:weebase/service/auth_service.dart';
+import 'package:weebase/screen/reset_password_screen.dart';
+
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});

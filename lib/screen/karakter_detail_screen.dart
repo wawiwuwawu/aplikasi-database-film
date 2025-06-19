@@ -3,13 +3,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../service/karakter_service.dart';
 import '../service/movie_service.dart';
 import '../model/karakter_model.dart';
-import '../model/movie_model.dart' as movie_model;
 import '../screen/movie_detail.dart';
-import '../screen/movie_list.dart';
 
 class CharacterDetailScreen extends StatefulWidget {
   final int characterId;
-  const CharacterDetailScreen({required this.characterId, Key? key}) : super(key: key);
+  const CharacterDetailScreen({required this.characterId, super.key});
 
   @override
   _CharacterDetailScreenState createState() => _CharacterDetailScreenState();
@@ -104,8 +102,8 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
         onPressed: () {
           Navigator.of(context).popUntil((route) => route.isFirst);
         },
-        child: const Icon(Icons.home),
         tooltip: 'Kembali ke Home',
+        child: const Icon(Icons.home),
       ),
     );
   }
@@ -182,7 +180,7 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
               ),
         ),
         const SizedBox(height: 12),
-        ...movies.map(_buildMovieTile).toList(),
+        ...movies.map(_buildMovieTile),
       ],
     );
   }

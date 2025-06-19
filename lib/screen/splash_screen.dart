@@ -1,8 +1,8 @@
 
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/screen/login_screen.dart';
-import 'package:flutter_application_1/screen/main_screen.dart';
-import 'package:flutter_application_1/service/preferences_service.dart';
+import 'package:weebase/screen/login_screen.dart';
+import 'package:weebase/screen/main_screen.dart';
+import 'package:weebase/service/preferences_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/service/auth_service.dart';
-import 'package:flutter_application_1/screen/login_screen.dart';
+import 'package:weebase/service/auth_service.dart';
+import 'package:weebase/screen/login_screen.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email; // Menerima email dari halaman sebelumnya

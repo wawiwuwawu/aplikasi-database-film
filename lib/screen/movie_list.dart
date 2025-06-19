@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/service/preferences_service.dart';
+import 'package:weebase/service/preferences_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../service/movie_service.dart';
 import '../service/wishlist_service.dart';
@@ -23,7 +23,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   final List<Movie> _movies = [];
   final List<Movie> _suggestions = [];
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
+  final String _searchQuery = '';
   Timer? _debounce;
   User? _user;  
   bool _isLoading = false;
@@ -32,7 +32,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   bool _isSearching = false;
   bool _searchLoading = false;
   DateTime? _last429Time;
-  ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
   int _currentPage = 1;
   bool _isLoadingMore = false;
   bool _hasMore = true;
@@ -41,14 +41,21 @@ class _MovieListScreenState extends State<MovieListScreen> {
   @override
   void initState() {
     super.initState();
-    _hasLoadedFromCache = false;
     _getUserData();
-    _loadAllData(); // Ganti jadi satu fungsi untuk load film & wishlist bersamaan
+    _loadAllData();
     _searchController.addListener(_onSearchChanged);
     _scrollController.addListener(_onScroll);
   }
 
   Future<void> _loadAllData() async {
+    if (_hasLoadedFromCache && _movies.isNotEmpty) {
+      // Jika sudah pernah load dari cache dan data masih ada, tidak perlu request ulang
+      setState(() {
+        _isLoading = false;
+        _serverOffline = false;
+      });
+      return;
+    }
     setState(() {
       _isLoading = true;
       _serverOffline = false;
@@ -62,6 +69,22 @@ class _MovieListScreenState extends State<MovieListScreen> {
         return;
       }
       // Ambil data film dan wishlist user bersamaan
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString('cached_movies');
+      if (cached != null && cached.isNotEmpty) {
+        final cachedMovies = Movie.decodeList(cached);
+        if (cachedMovies.isNotEmpty) {
+          setState(() {
+            _movies
+              ..clear()
+              ..addAll(cachedMovies);
+            _isLoading = false;
+            _serverOffline = false;
+          });
+          _hasLoadedFromCache = true;
+          return;
+        }
+      }
       final results = await Future.wait([
         _apiService.getMovies(query: '', page: 1),
         WishlistService().fetchWishlist(),
@@ -94,11 +117,11 @@ class _MovieListScreenState extends State<MovieListScreen> {
         _hasMore = movies.length >= 20;
       });
       // Update cache
-      final prefs = await SharedPreferences.getInstance();
       await prefs.setString('cached_movies', Movie.encodeList(movies));
       _hasLoadedFromCache = true;
     } catch (e) {
       print('Error saat memuat film/wishlist: $e');
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         if (_movies.isEmpty) _serverOffline = true;
@@ -175,7 +198,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
       });
       print('Hasil pencarian: \\${movies.length} film ditemukan');
     } catch (e) {
-      print('Error saat mencari film: \\${e}');
+      print('Error saat mencari film: \\$e');
       if (mounted) {
         String msg = 'Gagal mencari film. Server tidak merespons.';
         if (e.toString().contains('429')) {
@@ -257,6 +280,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
     if (fromRefresh || !_hasLoadedFromCache) {
       try {
         final movies = await _apiService.getMovies(query: '', page: 1);
+        if (!mounted) return;
         setState(() {
           _movies
             ..clear()
@@ -701,7 +725,7 @@ class SaveButton extends StatefulWidget {
   final double iconSize;
   final String? initialStatus;
   final void Function(String)? onStatusChanged;
-  const SaveButton({required this.movie, this.iconSize = 24, this.initialStatus, this.onStatusChanged, Key? key}) : super(key: key);
+  const SaveButton({required this.movie, this.iconSize = 24, this.initialStatus, this.onStatusChanged, super.key});
 
   @override
   State<SaveButton> createState() => SaveButtonState();
@@ -757,17 +781,17 @@ class SaveButtonState extends State<SaveButton> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Status film: ' + _statusLabel(value)),
+          content: Text('Status film: ${_statusLabel(value)}'),
           backgroundColor: Colors.green,
           duration: const Duration(milliseconds: 1200),
         ),
       );
     } catch (e) {
-      print('DEBUG error: ' + e.toString());
+      print('DEBUG error: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal menyimpan status: ' + e.toString()),
+          content: Text('Gagal menyimpan status: $e'),
           backgroundColor: Colors.red,
           duration: const Duration(milliseconds: 1800),
         ),
@@ -833,7 +857,7 @@ class SaveButtonState extends State<SaveButton> {
 class SearchResultScreen extends StatelessWidget {
   final List<Movie> searchResults;
 
-  const SearchResultScreen({Key? key, required this.searchResults}) : super(key: key);
+  const SearchResultScreen({super.key, required this.searchResults});
 
   @override
   Widget build(BuildContext context) {

@@ -7,7 +7,7 @@ import 'staff_detail_screen.dart';
 
 class MovieDetailScreen extends StatefulWidget {
   final Movie movie;
-  const MovieDetailScreen({required this.movie, Key? key}) : super(key: key);
+  const MovieDetailScreen({required this.movie, super.key});
 
   @override
   _MovieDetailScreenState createState() => _MovieDetailScreenState();
@@ -132,8 +132,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         onPressed: () {
           Navigator.of(context).popUntil((route) => route.isFirst);
         },
-        child: const Icon(Icons.home),
         tooltip: 'Kembali ke Home',
+        child: const Icon(Icons.home),
       ),
     );
   }
@@ -281,7 +281,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
               );
             },
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -318,7 +318,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
               );
             },
           );
-        }).toList(),
+        }),
       ],
     );
   }

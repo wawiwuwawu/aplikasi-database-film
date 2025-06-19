@@ -1,5 +1,5 @@
-name: flutter_application_1
-description: "A new Flutter project."
+name: weebase
+description: "Merupakan project aplikasi database film untuk pemenuhan tugas akhir."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -31,8 +31,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   http: ^1.2.1
   http_parser: ^4.0.0 
@@ -52,6 +50,12 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
   flutter_native_splash: ^2.3.10
+  flutter_launcher_icons: ^0.14.4
+  change_app_package_name: ^1.1.0
+
+
+
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -96,6 +100,12 @@ flutter:
 
 flutter_native_splash:
   color: "#ffffff"
-  image: assets/main_logo.png
+  image: assets/icons/main_icon.png
   android: true
   ios: true
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icons/main_icon.png
+  remove_alpha_ios: true

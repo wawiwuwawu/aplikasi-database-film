@@ -1,9 +1,9 @@
 // file: lib/screens/otp_verification_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/service/auth_service.dart';
-import 'package:flutter_application_1/screen/login_screen.dart';
+import 'package:weebase/service/auth_service.dart';
+import 'package:weebase/screen/login_screen.dart';
 import 'dart:async';
-import 'package:flutter_application_1/service/preferences_service.dart';
+import 'package:weebase/service/preferences_service.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
@@ -17,7 +17,7 @@ class OtpVerificationScreen extends StatefulWidget {
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   final _otpController = TextEditingController();
   bool _isLoading = false;
-  int _resendCooldown = 60;
+  final int _resendCooldown = 60;
   int _currentCooldown = 0;
   late final AuthService _authService;
   late final String _email;

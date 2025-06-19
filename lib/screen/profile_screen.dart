@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/screen/login_screen.dart';
-import 'package:flutter_application_1/service/preferences_service.dart';
+import 'package:weebase/service/preferences_service.dart';
 import 'profile_detail_screen.dart';
 import 'about_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../model/user_model.dart';
 
 class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
@@ -21,7 +22,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _getUserData() async {
-    final creds = await PreferencesService.getCredentials();
+    final creds = PreferencesService.getCredentials();
     if (mounted) {
       setState(() {
         user = creds;

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/screen/main_screen.dart';
-import 'package:flutter_application_1/service/auth_service.dart';
-import 'package:flutter_application_1/screen/register_screen.dart';
-import 'package:flutter_application_1/service/preferences_service.dart';
-import 'package:flutter_application_1/model/user_model.dart';
-import 'package:flutter_application_1/screen/forgot_password_screen.dart';
+import 'package:weebase/screen/main_screen.dart';
+import 'package:weebase/service/auth_service.dart';
+import 'package:weebase/screen/register_screen.dart';
+import 'package:weebase/service/preferences_service.dart';
+import 'package:weebase/model/user_model.dart';
+import 'package:weebase/screen/forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }

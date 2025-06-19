@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_application_1/screen/login_screen.dart';
-import 'package:flutter_application_1/screen/main_screen.dart';
-import 'package:flutter_application_1/screen/splash_screen.dart';
-import 'package:flutter_application_1/service/preferences_service.dart';
-import 'screen/movie_list.dart';
-
+import 'package:weebase/screen/login_screen.dart';
+import 'package:weebase/screen/splash_screen.dart';
+import 'package:weebase/service/preferences_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 

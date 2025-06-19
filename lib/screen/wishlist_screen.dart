@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../service/wishlist_service.dart';
 import '../service/movie_service.dart';
 import '../model/movie_model.dart';
@@ -20,6 +21,7 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
   String? _error;
   late TabController _tabController;
   final List<String> _statusTabs = ['disimpan', 'ditonton', 'sudah ditonton'];
+  bool _hasLoadedFromCache = false;
 
   @override
   void initState() {
@@ -35,16 +37,44 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
   }
 
   Future<void> _fetchWishlist({int retry = 2}) async {
+    if (_hasLoadedFromCache && _animeList.isNotEmpty) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
     setState(() {
       _isLoading = true;
       _error = null;
     });
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString('cached_wishlist');
+      if (cached != null && cached.isNotEmpty) {
+        final List<Map<String, dynamic>> cachedList = List<Map<String, dynamic>>.from(
+          (await Future.value(List<Map<String, dynamic>>.from(
+            (await Future.value(cached)).toString() == '' ? [] : List<Map<String, dynamic>>.from(
+              (await Future.value(cached)).toString().codeUnits
+            )
+          )))
+        );
+        if (cachedList.isNotEmpty) {
+          setState(() {
+            _animeList = cachedList;
+            _isLoading = false;
+          });
+          _hasLoadedFromCache = true;
+          return;
+        }
+      }
       final list = await _wishlistService.fetchWishlist();
+      if (!mounted) return;
       setState(() {
         _animeList = list;
         _isLoading = false;
       });
+      await prefs.setString('cached_wishlist', list.toString());
+      _hasLoadedFromCache = true;
     } catch (e) {
       if (retry > 0) {
         await Future.delayed(const Duration(milliseconds: 700));

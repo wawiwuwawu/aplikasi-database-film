@@ -3,7 +3,7 @@ import '../model/user_model.dart';
 
 class ProfileDetailScreen extends StatefulWidget {
   final User user;
-  const ProfileDetailScreen({Key? key, required this.user}) : super(key: key);
+  const ProfileDetailScreen({super.key, required this.user});
 
   @override
   State<ProfileDetailScreen> createState() => _ProfileDetailScreenState();
@@ -74,6 +74,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
               SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
+                  if (!mounted) return;
                   setState(() {
                     isEditing = !isEditing;
                   });

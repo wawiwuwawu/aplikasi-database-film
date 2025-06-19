@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 // Ganti dengan path yang benar untuk screen verifikasi OTP Anda
-import 'package:flutter_application_1/screen/otp_verification_screen.dart';
-import 'package:flutter_application_1/service/auth_service.dart';
+import 'package:weebase/screen/otp_verification_screen.dart';
+import 'package:weebase/service/auth_service.dart';
 
 // Anda mungkin ingin mengubah nama file ini menjadi login_screen.dart
 // karena sekarang fungsinya lebih ke arah login/registrasi.
 class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }
