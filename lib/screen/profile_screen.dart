@@ -4,6 +4,7 @@ import 'profile_detail_screen.dart';
 import 'about_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../model/user_model.dart';
+import 'wishlist_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -78,6 +79,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               await PreferencesService.clearToken();
               await PreferencesService.clearCredentials();
               await PreferencesService.clearMovieCache();
+              await WishlistScreen.clearWishlistCache(); // Hapus cache wishlist juga
               Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
             },
             icon: Icon(Icons.logout, color: Colors.black),

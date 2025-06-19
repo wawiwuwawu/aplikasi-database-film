@@ -82,6 +82,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
             _serverOffline = false;
           });
           _hasLoadedFromCache = true;
+          await _fetchUserWishlist(); // Tambahkan ini agar status film tetap terisi
           return;
         }
       }
@@ -114,7 +115,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
         _isLoading = false;
         _serverOffline = false;
         _currentPage = 1;
-        _hasMore = movies.length >= 20;
+        _hasMore = movies.length >= 5;
       });
       // Update cache
       await prefs.setString('cached_movies', Movie.encodeList(movies));
@@ -240,7 +241,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
         setState(() {
           _movies.addAll(movies);
           _currentPage = nextPage;
-          _hasMore = movies.length >= 20; // asumsikan 20 per page
+          _hasMore = movies.length >= 5; // ubah page size ke 5
         });
       } else {
         setState(() { _hasMore = false; });
@@ -287,7 +288,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
             ..addAll(movies);
           _serverOffline = false;
           _currentPage = 1;
-          _hasMore = movies.length >= 20;
+          _hasMore = movies.length >= 5; // ubah page size ke 5
         });
         // Update cache
         await prefs.setString('cached_movies', Movie.encodeList(movies));
@@ -421,26 +422,44 @@ class _MovieListScreenState extends State<MovieListScreen> {
                                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                               ),
                             )
-                          : GridView.builder(
-                              controller: _scrollController,
-                              padding: const EdgeInsets.all(8),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio: 0.6,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
-                              ),
-                              itemCount: _movies.length + (_isLoadingMore ? 1 : 0),
-                              itemBuilder: (context, index) {
-                                if (index < _movies.length) {
-                                  return _buildMovieCard(_movies[index]);
-                                } else {
-                                  return Center(child: Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: CircularProgressIndicator(),
-                                  ));
-                                }
-                              },
+                          : Column(
+                              children: [
+                                Expanded(
+                                  child: GridView.builder(
+                                    controller: _scrollController,
+                                    padding: const EdgeInsets.all(8),
+                                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2,
+                                      childAspectRatio: 0.6,
+                                      crossAxisSpacing: 8,
+                                      mainAxisSpacing: 8,
+                                    ),
+                                    itemCount: _movies.length + (_isLoadingMore ? 1 : 0),
+                                    itemBuilder: (context, index) {
+                                      if (index < _movies.length) {
+                                        return _buildMovieCard(_movies[index]);
+                                      } else {
+                                        return Center(child: Padding(
+                                          padding: EdgeInsets.all(16),
+                                          child: CircularProgressIndicator(),
+                                        ));
+                                      }
+                                    },
+                                  ),
+                                ),
+                                if (!_hasMore && _movies.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    child: ElevatedButton.icon(
+                                      icon: Icon(Icons.refresh),
+                                      label: Text('Coba Muat Lagi'),
+                                      onPressed: () async {
+                                        setState(() { _hasMore = true; });
+                                        await _fetchMoreMovies();
+                                      },
+                                    ),
+                                  ),
+                              ],
                             ),
                 ),
                 if (_suggestions.isNotEmpty)
@@ -612,6 +631,11 @@ class _MovieListScreenState extends State<MovieListScreen> {
                             movie: movie,
                             iconSize: 20,
                             initialStatus: _userMovieStatus[movie.id],
+                            onStatusChanged: (_) async {
+                              // Hapus cache wishlist agar wishlist selalu up-to-date
+                              final prefs = await SharedPreferences.getInstance();
+                              await prefs.remove('cached_wishlist');
+                            },
                           ),
                         ),
                         if (_user != null && _user!.role == "admin")

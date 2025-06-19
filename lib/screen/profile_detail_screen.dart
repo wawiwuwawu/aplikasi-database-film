@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:weebase/screen/forgot_password_screen.dart';
 import '../model/user_model.dart';
 
 class ProfileDetailScreen extends StatefulWidget {
@@ -57,6 +58,15 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
               ),
               SizedBox(height: 16),
               Text('Email: ${widget.user.email}', style: TextStyle(fontSize: 16)),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
+                  );
+                },
+                child: Text('Lupa Password?', style: TextStyle(color: Colors.blue)),
+              ),
               if (widget.user.createdAt != null)
                 Text('Dibuat: ${widget.user.createdAt}', style: TextStyle(fontSize: 16)),
               SizedBox(height: 16),

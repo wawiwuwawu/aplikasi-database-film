@@ -3,8 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:weebase/screen/login_screen.dart';
 import 'package:weebase/screen/splash_screen.dart';
 import 'package:weebase/service/preferences_service.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+
 
 
 
@@ -16,9 +15,7 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
   await PreferencesService.init();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-);
+
   runApp(MyApp());
 }
 

@@ -59,17 +59,7 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Dikembangkan oleh: [Nama Anda/Kelompok Anda]',
-              style: TextStyle(color: Colors.grey[700], fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Program Studi: Sistem Informasi',
-              style: TextStyle(color: Colors.grey[700], fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Universitas: Amikom Purwokerto',
+              'Dikembangkan oleh: Weebase Team',
               style: TextStyle(color: Colors.grey[700], fontSize: 14),
             ),
             const SizedBox(height: 40),

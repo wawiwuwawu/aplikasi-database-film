@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../service/wishlist_service.dart';
@@ -11,6 +12,12 @@ class WishlistScreen extends StatefulWidget {
 
   @override
   State<WishlistScreen> createState() => _WishlistScreenState();
+
+  /// Fungsi static untuk menghapus cache wishlist, panggil saat logout
+  static Future<void> clearWishlistCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('cached_wishlist');
+  }
 }
 
 class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProviderStateMixin {
@@ -20,29 +27,39 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
   bool _isLoading = true;
   String? _error;
   late TabController _tabController;
-  final List<String> _statusTabs = ['disimpan', 'ditonton', 'sudah ditonton'];
+  final List<String> _statusTabs = ['semua', 'disimpan', 'ditonton', 'sudah ditonton'];
   bool _hasLoadedFromCache = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _statusTabs.length, vsync: this);
     _fetchWishlist();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   Future<void> _fetchWishlist({int retry = 2}) async {
     if (_hasLoadedFromCache && _animeList.isNotEmpty) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
       return;
     }
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -51,20 +68,21 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
       final prefs = await SharedPreferences.getInstance();
       final cached = prefs.getString('cached_wishlist');
       if (cached != null && cached.isNotEmpty) {
-        final List<Map<String, dynamic>> cachedList = List<Map<String, dynamic>>.from(
-          (await Future.value(List<Map<String, dynamic>>.from(
-            (await Future.value(cached)).toString() == '' ? [] : List<Map<String, dynamic>>.from(
-              (await Future.value(cached)).toString().codeUnits
-            )
-          )))
-        );
-        if (cachedList.isNotEmpty) {
-          setState(() {
-            _animeList = cachedList;
-            _isLoading = false;
-          });
-          _hasLoadedFromCache = true;
-          return;
+        try {
+          final List<dynamic> decoded = jsonDecode(cached);
+          final List<Map<String, dynamic>> cachedList = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
+          if (cachedList.isNotEmpty) {
+            if (!mounted) return;
+            setState(() {
+              _animeList = cachedList;
+              _isLoading = false;
+            });
+            _hasLoadedFromCache = true;
+            return;
+          }
+        } catch (e) {
+          // Jika gagal decode, hapus cache lama
+          await prefs.remove('cached_wishlist');
         }
       }
       final list = await _wishlistService.fetchWishlist();
@@ -73,13 +91,14 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
         _animeList = list;
         _isLoading = false;
       });
-      await prefs.setString('cached_wishlist', list.toString());
+      await prefs.setString('cached_wishlist', jsonEncode(list));
       _hasLoadedFromCache = true;
     } catch (e) {
       if (retry > 0) {
         await Future.delayed(const Duration(milliseconds: 700));
         return _fetchWishlist(retry: retry - 1);
       }
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -90,7 +109,26 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     // Filter list sesuai tab/status yang dipilih
-    final filteredList = _animeList.where((anime) => anime['status'] == _statusTabs[_tabController.index]).toList();
+    List<Map<String, dynamic>> filteredList;
+    if (_tabController.index == 0) {
+      filteredList = List<Map<String, dynamic>>.from(_animeList);
+    } else {
+      filteredList = _animeList.where((anime) => anime['status'] == _statusTabs[_tabController.index]).toList();
+    }
+    // Filter by search query (case-insensitive, by title)
+    if (_searchQuery.trim().isNotEmpty) {
+      filteredList = filteredList.where((anime) => (anime['title'] ?? '').toString().toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+    }
+    // Urutkan berdasarkan warna status: biru (disimpan), oranye (ditonton), hijau (sudah ditonton)
+    filteredList.sort((a, b) {
+      int getStatusOrder(String? status) {
+        if (status == 'disimpan') return 0;
+        if (status == 'ditonton') return 1;
+        if (status == 'sudah ditonton') return 2;
+        return 3;
+      }
+      return getStatusOrder(a['status']) - getStatusOrder(b['status']);
+    });
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -100,7 +138,7 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "My Anime List",
+                "List Anime Ku",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -112,10 +150,19 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: TextField(
+                  controller: _searchController,
                   decoration: InputDecoration(
                     hintText: "Search",
                     border: InputBorder.none,
-                    suffixIcon: Icon(Icons.search),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              FocusScope.of(context).unfocus();
+                            },
+                          )
+                        : Icon(Icons.search),
                   ),
                 ),
               ),
@@ -138,7 +185,10 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
                     : _error != null
                         ? Center(child: Text(_error!, style: TextStyle(color: Colors.red)))
                         : RefreshIndicator(
-                            onRefresh: _fetchWishlist,
+                            onRefresh: () async {
+                              _hasLoadedFromCache = false;
+                              await _fetchWishlist();
+                            },
                             child: filteredList.isEmpty
                                 ? Center(child: Text('Tidak ada data untuk kategori ini'))
                                 : ListView.builder(
@@ -151,7 +201,7 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
                                           borderRadius: BorderRadius.circular(8),
                                           onTap: () async {
                                             print('[DEBUG] anime item: ' + anime.toString());
-                                            final movieId = anime['movieId'];
+                                            final movieId = anime['movie_id'];
                                             if (movieId == null) {
                                               ScaffoldMessenger.of(context).showSnackBar(
                                                 SnackBar(content: Text('ID film tidak ditemukan.')),
@@ -272,7 +322,12 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
                                                 ),
                                                 iconSize: 20,
                                                 initialStatus: anime['status'],
-                                                onStatusChanged: (_) => _fetchWishlist(),
+                                                onStatusChanged: (_) async {
+                                                  final prefs = await SharedPreferences.getInstance();
+                                                  await prefs.remove('cached_wishlist');
+                                                  _hasLoadedFromCache = false;
+                                                  await _fetchWishlist();
+                                                },
                                               ),
                                             ],
                                           ),
