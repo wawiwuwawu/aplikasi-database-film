@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- WRITE_EXTERNAL_STORAGE biasanya hanya diperlukan untuk Android 10 ke bawah -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
     <application
         android:label="WeeBase"
         android:name="${applicationName}"

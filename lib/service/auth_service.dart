@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:logger/logger.dart';
 
 class AuthService {
+  static final Logger logger = Logger();
   static const baseUrl = 'https://api.wawunime.my.id/api/auth';
 
   /// Registers a new user and triggers OTP sending in one step.
@@ -69,8 +71,7 @@ class AuthService {
       final responseData = jsonDecode(response.body);
 
       if (response.statusCode == 200 && responseData['success'] == true) {
-        print(responseData);
-
+        logger.i(responseData);
         return responseData;
       } else {
         if (response.statusCode == 403) {
@@ -80,8 +81,7 @@ class AuthService {
         }
       }
     } catch (e) {
-      print(e);
-
+      logger.e(e);
       throw Exception('Failed to login: $e');
     }
   }
@@ -122,18 +122,17 @@ class AuthService {
 
     if (response.statusCode == 200) {
       // Return the parsed response
-      print(jsonDecode(response.body));
+      logger.i(jsonDecode(response.body));
       return jsonDecode(response.body);
     } else {
       final responseData = jsonDecode(response.body);
-
       throw Exception(responseData["error"].toString());
     }
   }
 
   Future<String?> verifyOtp(String email, String otp) async {
     final url = Uri.parse('$baseUrl/verify-otp');
-    print('Verifying OTP to: $url');
+    logger.i('Verifying OTP to: $url');
 
     try {
       final response = await http.post(
@@ -148,22 +147,22 @@ class AuthService {
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final String token = body['token'];
-        print('Service: Verifikasi sukses, token diterima!');
+        logger.i('Service: Verifikasi sukses, token diterima!');
         return token;
       } else {
-        print('Service: Gagal verifikasi - ${response.statusCode}');
-        print('Service: Body - ${response.body}');
+        logger.e('Service: Gagal verifikasi - \\${response.statusCode}');
+        logger.e('Service: Body - \\${response.body}');
         return null;
       }
     } catch (e) {
-      print('Service: Error koneksi saat verifikasi - $e');
+      logger.e('Service: Error koneksi saat verifikasi - \\$e');
       return null;
     }
   }
 
   Future<bool> resendOtp(String email) async {
     final url = Uri.parse('$baseUrl/resend-otp');
-    print('Resending OTP to: $url');
+    logger.i('Resending OTP to: \\$url');
 
     try {
       final response = await http.post(
@@ -174,14 +173,14 @@ class AuthService {
 
       // Status 200 OK berarti backend berhasil mengirim ulang
       if (response.statusCode == 200) {
-        print('Service: OTP berhasil dikirim ulang.');
+        logger.i('Service: OTP berhasil dikirim ulang.');
         return true;
       } else {
-        print('Service: Gagal mengirim ulang OTP - ${response.body}');
+        logger.e('Service: Gagal mengirim ulang OTP - \\${response.body}');
         return false;
       }
     } catch (e) {
-      print('Service: Error koneksi saat kirim ulang OTP - $e');
+      logger.e('Service: Error koneksi saat kirim ulang OTP - \\$e');
       return false;
     }
   }

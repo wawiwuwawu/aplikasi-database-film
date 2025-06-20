@@ -3,9 +3,11 @@ import 'package:http_parser/http_parser.dart';
 import 'dart:convert';
 import '../model/seiyu_model.dart';
 import 'dart:io';
+import 'package:logger/logger.dart';
 
 class SeiyuApiService {
   static const String _baseUrl = 'https://api.wawunime.my.id/api/seiyu';
+  final Logger _logger = Logger();
 
   Future<List<Seiyu>> getSeiyuDetail({int page = 1, String? query}) async {
     final uri = Uri.parse('$_baseUrl/detail').replace(
@@ -72,7 +74,7 @@ class SeiyuApiService {
         );
       }
     } catch (e) {
-      print('Error in getSeiyuDetailId: $e');
+      _logger.e('Error in getSeiyuDetailId: $e');
       throw Exception('Failed to load data: $e');
     }
   }
@@ -192,7 +194,7 @@ class SeiyuApiService {
     final response = await http.delete(uri);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      print('Seiyu berhasil dihapus');
+      _logger.i('Seiyu berhasil dihapus');
     } else {
       throw Exception('Gagal menghapus seiyu: ${response.statusCode}');
     }

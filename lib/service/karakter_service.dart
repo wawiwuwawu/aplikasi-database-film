@@ -3,9 +3,11 @@ import 'package:http_parser/http_parser.dart';
 import 'dart:convert';
 import '../model/karakter_model.dart';
 import 'dart:io';
+import 'package:logger/logger.dart';
 
 class KarakterService {
   static const String _baseUrl = 'https://api.wawunime.my.id/api/karakter';
+  final Logger _logger = Logger();
 
   Future<List<Karakter>> getKarakterDetail({int page = 1, String? query}) async {
     const String baseUrl = '$_baseUrl/detail';
@@ -64,7 +66,7 @@ class KarakterService {
         );
       }
     } catch (e) {
-      print('Error in getKarakterDetailId: $e');
+      _logger.e('Error in getKarakterDetailId: $e');
       throw Exception('Failed to load data: $e');
     }
   }
@@ -129,7 +131,7 @@ class KarakterService {
     final responseBody = await streamedResponse.stream.bytesToString();
 
     if (streamedResponse.statusCode >= 200 && streamedResponse.statusCode < 300) {
-      print('Karakter berhasil diperbarui: $responseBody');
+      _logger.i('Karakter berhasil diperbarui: $responseBody');
     } else {
       throw Exception('Update failed: ${streamedResponse.statusCode} – $responseBody');
     }
@@ -171,7 +173,7 @@ class KarakterService {
     final response = await http.delete(uri);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      print('Karakter berhasil dihapus');
+      _logger.i('Karakter berhasil dihapus');
     } else {
       throw Exception('Gagal menghapus karakter: ${response.statusCode}');
     }

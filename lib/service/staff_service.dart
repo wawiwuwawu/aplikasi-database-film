@@ -3,9 +3,11 @@ import 'package:http_parser/http_parser.dart';
 import 'dart:convert';
 import '../model/staff_model.dart';
 import 'dart:io';
+import 'package:logger/logger.dart';
 
 class StaffService {
   static const String _baseUrl = 'https://api.wawunime.my.id/api/staff';
+  final Logger _logger = Logger();
 
   Future<void> uploadStaff({
     required Staff staff,
@@ -94,7 +96,7 @@ class StaffService {
         throw Exception('Failed to load staff: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error in getStaffById: $e');
+      _logger.e('Error in getStaffById: $e');
       throw Exception('Failed to load data: $e');
     }
   }
@@ -120,7 +122,7 @@ class StaffService {
         );
       }
     } catch (e) {
-      print('Error in getStaffDetailId: $e');
+      _logger.e('Error in getStaffDetailId: $e');
       throw Exception('Failed to load data: $e');
     }
   }
@@ -160,7 +162,7 @@ class StaffService {
 
     if (streamedResponse.statusCode >= 200 &&
         streamedResponse.statusCode < 300) {
-      print('Staff berhasil diperbarui: $responseBody');
+      _logger.i('Staff berhasil diperbarui: $responseBody');
     } else {
       throw Exception(
         'Update failed: ${streamedResponse.statusCode} – $responseBody',
@@ -198,7 +200,7 @@ class StaffService {
     final response = await http.delete(uri);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      print('Staff berhasil dihapus');
+      _logger.i('Staff berhasil dihapus');
     } else {
       throw Exception('Gagal menghapus staff: ${response.statusCode}');
     }

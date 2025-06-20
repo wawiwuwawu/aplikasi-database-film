@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:logger/logger.dart';
 import '../service/preferences_service.dart';
 
 class WishlistService {
   static const String baseUrl = 'https://api.wawunime.my.id/api/list/';
+
+  final Logger _logger = Logger();
 
   Future<List<Map<String, dynamic>>> fetchWishlist() async {
     final user = PreferencesService.getCredentials();
@@ -54,7 +57,7 @@ class WishlistService {
       }),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      print('DEBUG response.body: ' + response.body);
+      _logger.e('DEBUG response.body: ' + response.body);
       String msg = 'Gagal menyimpan status movie';
       try {
         final decoded = jsonDecode(response.body);

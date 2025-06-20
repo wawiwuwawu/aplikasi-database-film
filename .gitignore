@@ -46,3 +46,5 @@ app.*.map.json
 
 # Custom - tambahkan file Anda di sini
 lib/firebase_options.dart
+
+/android/key.properties
