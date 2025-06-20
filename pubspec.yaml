@@ -69,7 +69,9 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/
+    - assets/splash_logo/splash_logo_app.png
+    - assets/icons/main_icon.png
+    - assets/icons/transparent_icon.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -99,7 +101,7 @@ flutter:
 
 flutter_native_splash:
   color: "#ffffff"
-  image: assets/icons/main_icon.png
+  image: assets/splash_logo/splash_logo_app.png
   android: true
   ios: true
 

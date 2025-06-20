@@ -85,27 +85,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 40),
                 // Logo
                 Image.asset(
-                  'assets/main_logo.png',
+                  'assets/icons/transparent_icon.png',
                   height: 100,
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  'MYS',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                  ),
-                ),
-                Text(
-                  'YOUR MOVIE & SERIES',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.orange,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
                 Text(
                   'LOGIN',
                   style: TextStyle(
@@ -178,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               );
                             },
                             child: const Text(
-                              'Forgot password?',
+                              'Lupa Password?',
                               style: TextStyle(color: Colors.black54),
                             ),
                           ),
@@ -192,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Don't Have An Account? "),
+                    const Text("Tidak punya akun? "),
                     TextButton(
                       onPressed: () {
                         Navigator.pushReplacement(
@@ -200,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           MaterialPageRoute(builder: (context) => RegisterScreen()),
                         );
                       },
-                      child: const Text("Sign Up"),
+                      child: const Text("Daftar"),
                     ),
                   ],
                 ),

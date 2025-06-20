@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:weebase/screen/login_screen.dart';
 import 'package:weebase/screen/main_screen.dart';
@@ -19,9 +18,12 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkLoginAndNavigate() async {
+    await PreferencesService.init(); // Inisialisasi SharedPreferences sebelum akses token
     final token = PreferencesService.getToken();
     await Future.delayed(const Duration(seconds: 1)); // opsional delay agar transisi smooth
 
+    if (!mounted) return;
+    
     if (token != null && token.isNotEmpty) {
       Navigator.pushReplacement(
         context,
@@ -37,10 +39,15 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Tampilan sementara saat proses pengecekan
-    return const Scaffold(
+    return Scaffold(
+      backgroundColor: Colors.white,
       body: Center(
-        child: CircularProgressIndicator(),
+        child: Image.asset(
+          'assets/icons/main_icon.png',
+          width: 120,
+          height: 120,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }

@@ -140,7 +140,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           textAlign: TextAlign.center,
                           decoration: const InputDecoration(
                             labelText: 'Kode OTP',
-                            counterText: "", // Menghilangkan counter
+                            counterText: "",
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -163,7 +163,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        // Confirm Password Field
                         TextField(
                           controller: _confirmPasswordController,
                           obscureText: !_isPasswordVisible,
@@ -172,7 +171,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           ),
                         ),
                         const SizedBox(height: 30),
-                        // Tombol Simpan
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(

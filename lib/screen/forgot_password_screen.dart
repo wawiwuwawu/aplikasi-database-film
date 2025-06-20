@@ -76,26 +76,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 40),
-                // Logo (menggunakan gaya Anda sebelumnya)
-                Image.asset('assets/main_logo.png', height: 100),
+                Image.asset('assets/icons/transparent_icon.png', height: 100),
                 const SizedBox(height: 10),
-                const Text(
-                  'MYS',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                  ),
-                ),
-                const Text(
-                  'YOUR MOVIE & SERIES',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.orange,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 30),
                 const Text(
                   'LUPA PASSWORD',
                   style: TextStyle(
@@ -165,7 +147,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     // Kembali ke halaman sebelumnya (LoginScreen)
                     Navigator.of(context).pop();
                   },
-                  child: const Text("Kembali ke Login"),
+                  child: const Text("Kembali ke menu Login"),
                 ),
               ],
             ),

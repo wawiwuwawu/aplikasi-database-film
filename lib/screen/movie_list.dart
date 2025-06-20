@@ -399,6 +399,14 @@ class _MovieListScreenState extends State<MovieListScreen> {
                             textAlign: TextAlign.center,
                             style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                           ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            icon: Icon(Icons.refresh),
+                            label: Text('Coba Muat Lagi'),
+                            onPressed: () async {
+                              await _loadMovies(fromRefresh: true);
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -408,7 +416,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
             )
           : Stack(
               children: [
-                // Daftar utama
+                // Daftar utama (GridView langsung, tanpa Column/Expanded)
                 RefreshIndicator(
                   onRefresh: () => _loadMovies(fromRefresh: true),
                   child: _isLoading
@@ -422,118 +430,123 @@ class _MovieListScreenState extends State<MovieListScreen> {
                                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                               ),
                             )
-                          : Column(
-                              children: [
-                                Expanded(
-                                  child: GridView.builder(
-                                    controller: _scrollController,
-                                    padding: const EdgeInsets.all(8),
-                                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      childAspectRatio: 0.6,
-                                      crossAxisSpacing: 8,
-                                      mainAxisSpacing: 8,
-                                    ),
-                                    itemCount: _movies.length + (_isLoadingMore ? 1 : 0),
-                                    itemBuilder: (context, index) {
-                                      if (index < _movies.length) {
-                                        return _buildMovieCard(_movies[index]);
-                                      } else {
-                                        return Center(child: Padding(
-                                          padding: EdgeInsets.all(16),
-                                          child: CircularProgressIndicator(),
-                                        ));
-                                      }
-                                    },
-                                  ),
-                                ),
-                                if (!_hasMore && _movies.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    child: ElevatedButton.icon(
-                                      icon: Icon(Icons.refresh),
-                                      label: Text('Coba Muat Lagi'),
-                                      onPressed: () async {
-                                        setState(() { _hasMore = true; });
-                                        await _fetchMoreMovies();
-                                      },
-                                    ),
-                                  ),
-                              ],
+                          : GridView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.all(8),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                childAspectRatio: 0.6,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                              ),
+                              itemCount: _movies.length + (_isLoadingMore ? 1 : 0),
+                              itemBuilder: (context, index) {
+                                if (index < _movies.length) {
+                                  return _buildMovieCard(_movies[index]);
+                                } else {
+                                  return Center(child: Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: CircularProgressIndicator(),
+                                  ));
+                                }
+                              },
                             ),
                 ),
+                // Suggestion search (hanya jika ada)
                 if (_suggestions.isNotEmpty)
                   Positioned(
                     top: 0,
                     left: 0,
                     right: 0,
-                    child: Container(
-                      height: MediaQuery.of(context).size.height * 0.25, // 1/4 layar
-                      color: Colors.white,
-                      child: ListView.builder(
-                        itemCount: _suggestions.length,
-                        itemBuilder: (context, index) {
-                          final movie = _suggestions[index];
-                          return ListTile(
-                            leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: CachedNetworkImage(
-                                imageUrl: movie.coverUrl,
-                                width: 50,
-                                height: 75,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) =>
-                                    Container(color: Colors.grey[200]),
-                                errorWidget: (context, url, error) =>
-                                    const Icon(Icons.error),
+                    child: Material(
+                      elevation: 4,
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.25, // 1/4 layar
+                        color: Colors.white,
+                        child: ListView.builder(
+                          itemCount: _suggestions.length,
+                          itemBuilder: (context, index) {
+                            final movie = _suggestions[index];
+                            return ListTile(
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: CachedNetworkImage(
+                                  imageUrl: movie.coverUrl,
+                                  width: 50,
+                                  height: 75,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) =>
+                                      Container(color: Colors.grey[200]),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
+                                ),
                               ),
-                            ),
-                            title: Text(
-                              movie.judul,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                              title: Text(
+                                movie.judul,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Text(
-                              '${movie.tahunRilis} • ${movie.type}',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                            ),
-                            onTap: () async {
-                              // Tampilkan loading dialog
-                              showDialog(
-                                context: context,
-                                barrierDismissible: false,
-                                builder: (context) => const Center(child: CircularProgressIndicator()),
-                              );
-                              try {
-                                final detailMovie = await _apiService.getMovieDetail(movie.id);
-                                if (mounted) {
-                                  Navigator.pop(context); // tutup loading
-                                  setState(() {
-                                    _searchController.clear();
-                                    _suggestions.clear();
-                                  });
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => MovieDetailScreen(movie: detailMovie),
-                                    ),
-                                  );
+                              subtitle: Text(
+                                '${movie.tahunRilis} • ${movie.type}',
+                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                              ),
+                              onTap: () async {
+                                // Tampilkan loading dialog
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (context) => const Center(child: CircularProgressIndicator()),
+                                );
+                                try {
+                                  final detailMovie = await _apiService.getMovieDetail(movie.id);
+                                  if (mounted) {
+                                    Navigator.pop(context); // tutup loading
+                                    setState(() {
+                                      _searchController.clear();
+                                      _suggestions.clear();
+                                    });
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => MovieDetailScreen(movie: detailMovie),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    Navigator.pop(context); // tutup loading
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Gagal memuat detail film.')),
+                                    );
+                                  }
                                 }
-                              } catch (e) {
-                                if (mounted) {
-                                  Navigator.pop(context); // tutup loading
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Gagal memuat detail film.')),
-                                  );
-                                }
-                              }
-                            },
-                          );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                // Sticky mini FAB refresh di bawah
+                if (!_hasMore && _movies.isNotEmpty)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 24 + MediaQuery.of(context).padding.bottom,
+                    child: Center(
+                      child: FloatingActionButton(
+                        mini: true,
+                        heroTag: 'refresh_fab',
+                        onPressed: () async {
+                          setState(() { _hasMore = true; });
+                          await _fetchMoreMovies();
                         },
+                        child: const Icon(Icons.refresh),
+                        tooltip: 'Coba Muat Lagi',
                       ),
                     ),
                   ),

@@ -29,10 +29,8 @@ class PreferencesService {
   /// Ambil credentials dari SharedPreferences
   static User? getCredentials() {
     final String? credentialsString = _preferences?.getString('credentials');
-    print('DEBUG credentialsString: ' + (credentialsString ?? 'NULL'));
     if (credentialsString != null) {
       final Map<String, dynamic> json = jsonDecode(credentialsString);
-      print('DEBUG credentials json: ' + json.toString());
       return User.fromJson(json);
     }
     return null;

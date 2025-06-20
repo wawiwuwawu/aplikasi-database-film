@@ -132,25 +132,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 const SizedBox(height: 40),
                 // Logo
-                Image.asset('assets/main_logo.png', height: 100),
-                const SizedBox(height: 10),
-                const Text(
-                  'MYS',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                  ),
-                ),
-                const Text(
-                  'YOUR MOVIE & SERIES',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.orange,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 30),
+                Image.asset('assets/icons/transparent_icon.png', height: 200, width: 200),
+                const SizedBox(height: 20),
                 const Text(
                   'REGISTER',
                   style: TextStyle(
@@ -271,6 +254,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     'Masukkan nama, email, dan password untuk mendaftar. Kami akan mengirimkan kode verifikasi ke email Anda.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  },
+                  child: const Text(
+                    'Sudah punya akun? Masuk',
+                    style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
