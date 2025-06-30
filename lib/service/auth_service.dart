@@ -1,7 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
+import 'package:weebase/model/user_model.dart';
+import 'package:weebase/service/preferences_service.dart';
 
 class AuthService {
   static final Logger logger = Logger();
@@ -11,7 +15,11 @@ class AuthService {
   /// Backend endpoint: POST /register
   /// Required fields: username, email, password
   /// On success, backend sends OTP to the email and returns a response indicating pending verification.
-  Future<Map<String, dynamic>> register(String username, String email, String password) async {
+  Future<Map<String, dynamic>> register(
+    String username,
+    String email,
+    String password,
+  ) async {
     final url = Uri.parse('$baseUrl/register');
 
     try {
@@ -75,9 +83,13 @@ class AuthService {
         return responseData;
       } else {
         if (response.statusCode == 403) {
-          throw Exception(responseData['message'] ?? 'Akun Anda belum diverifikasi.');
+          throw Exception(
+            responseData['message'] ?? 'Akun Anda belum diverifikasi.',
+          );
         } else {
-          throw Exception(responseData['message'] ?? 'Email atau password salah.');
+          throw Exception(
+            responseData['message'] ?? 'Email atau password salah.',
+          );
         }
       }
     } catch (e) {
@@ -86,49 +98,144 @@ class AuthService {
     }
   }
 
-  Future<String?> getToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
-  }
+  Future<User> getCurrentUser() async {
+    final url = Uri.parse('$baseUrl/me');
+    final token = PreferencesService.getToken();
 
-  Future<void> logout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-  }
+    print("Token: $token");
 
-  Future completeProfile(
-    String userId,
-    String phone,
-    String address,
-    String latitude,
-    String longitude,
-    String location,
-    String gender,
-  ) async {
-    final url = Uri.parse('$baseUrl/completeProfile');
-    final response = await http.post(
+    if (token == null) {
+      throw Exception("Token tidak ditemukan, silakan login ulang.");
+    }
+
+    final response = await http.get(
       url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(({
-        'user_id': userId,
-        'phone': phone,
-        'address': address,
-        'latitude': latitude,
-        'longitude': longitude,
-        'location': location,
-        'gender': gender,
-      })),
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
     );
 
-    if (response.statusCode == 200) {
-      // Return the parsed response
-      logger.i(jsonDecode(response.body));
-      return jsonDecode(response.body);
+    final statusCode = response.statusCode;
+    final responseBody = response.body;
+
+    if (statusCode == 200) {
+      final responseData = jsonDecode(responseBody);
+      if (responseData['success'] == true && responseData['data'] != null) {
+        return User.fromJson(responseData['data']);
+      } else {
+        throw Exception('Data user tidak ditemukan.');
+      }
     } else {
-      final responseData = jsonDecode(response.body);
-      throw Exception(responseData["error"].toString());
+      logger.e('Gagal mendapatkan user: $statusCode - $responseBody');
+      throw Exception('Gagal mendapatkan data user: ${response.reasonPhrase}');
     }
   }
+
+  Future<void> updateUser({
+    required int id,
+    required String name,
+    required String email,
+    String? bio,
+    String? password,
+    File? profileImage,
+  }) async {
+    final uri = Uri.parse('$baseUrl/me');
+    final request = http.MultipartRequest('PUT', uri)
+      ..headers['Accept'] = 'application/json';
+
+    // Tambahkan Authorization Bearer Token
+    final token = PreferencesService.getToken();
+
+    print("TOken: $token");
+
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    // Isi field form
+    request.fields['name'] = name;
+    request.fields['email'] = email;
+    if (bio != null) request.fields['bio'] = bio;
+    if (password != null) request.fields['password'] = password;
+
+    // Jika ada gambar
+    if (profileImage != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          profileImage.path,
+          contentType: MediaType(
+            'image',
+            profileImage.path.toLowerCase().endsWith('.png') ? 'png' : 'jpeg',
+          ),
+        ),
+      );
+    }
+
+    try {
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      logger.i('Response Status Code: ${response.statusCode}');
+      logger.i('Response Body: ${response.body}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        // ✅ Success, tampilkan jika perlu
+        logger.i('Update berhasil');
+      } else {
+        // ❌ Error → tampilkan error detail
+        try {
+          final jsonResponse = jsonDecode(response.body);
+          logger.e('Error detail: $jsonResponse');
+          throw Exception(
+            jsonResponse['error'] ??
+                jsonResponse['message'] ??
+                'Gagal update user',
+          );
+        } catch (e) {
+          logger.e('Gagal parsing JSON error response: $e');
+          throw Exception(
+            'Gagal update user: ${response.statusCode} - ${response.body}',
+          );
+        }
+      }
+    } catch (e) {
+      logger.e('Exception during updateUser: $e');
+      rethrow; // biar error tetap dilempar ke atas untuk ditangani
+    }
+  }
+
+  // Future completeProfile(
+  //   String userId,
+  //   String phone,
+  //   String address,
+  //   String latitude,
+  //   String longitude,
+  //   String location,
+  //   String gender,
+  // ) async {
+  //   final url = Uri.parse('$baseUrl/completeProfile');
+  //   final response = await http.post(
+  //     url,
+  //     headers: {'Content-Type': 'application/json'},
+  //     body: jsonEncode(({
+  //       'user_id': userId,
+  //       'phone': phone,
+  //       'address': address,
+  //       'latitude': latitude,
+  //       'longitude': longitude,
+  //       'location': location,
+  //       'gender': gender,
+  //     })),
+  //   );
+
+  //   if (response.statusCode == 200) {
+  //     // Return the parsed response
+  //     logger.i(jsonDecode(response.body));
+  //     return jsonDecode(response.body);
+  //   } else {
+  //     final responseData = jsonDecode(response.body);
+  //     throw Exception(responseData["error"].toString());
+  //   }
+  // }
 
   Future<String?> verifyOtp(String email, String otp) async {
     final url = Uri.parse('$baseUrl/verify-otp');
@@ -138,10 +245,7 @@ class AuthService {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'otp': otp,
-        }),
+        body: jsonEncode({'email': email, 'otp': otp}),
       );
 
       if (response.statusCode == 200) {
@@ -186,22 +290,38 @@ class AuthService {
   }
 
   Future<bool> forgotPassword(String email) async {
-      final url = Uri.parse('$baseUrl/forgot-password');
-      try {
-          final response = await http.post(url, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'email': email}));
-          return response.statusCode == 200;
-      } catch (e) {
-          return false;
-      }
+    final url = Uri.parse('$baseUrl/forgot-password');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
   }
 
-  Future<bool> resetPassword({required String email, required String otp, required String newPassword}) async {
-      final url = Uri.parse('$baseUrl/reset-password');
-      try {
-          final response = await http.post(url, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'email': email, 'otp': otp, 'newPassword': newPassword}));
-          return response.statusCode == 200;
-      } catch (e) {
-          return false;
-      }
+  Future<bool> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    final url = Uri.parse('$baseUrl/reset-password');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'otp': otp,
+          'newPassword': newPassword,
+        }),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
   }
 }

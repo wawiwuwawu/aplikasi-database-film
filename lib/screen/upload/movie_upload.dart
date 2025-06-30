@@ -19,7 +19,8 @@ class MovieFormPage extends StatefulWidget {
   _MovieFormPageState createState() => _MovieFormPageState();
 }
 
-class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserver {
+class _MovieFormPageState extends State<MovieFormPage>
+    with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
 
@@ -76,7 +77,8 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
   List<StaffForm> _staffs = [];
   List<SeiyuKarakterPairForm> _seiyuKarakterPairs = [];
 
-  File? _coverImage;
+  File? _coverImageFile;
+  String? _coverImageUrl;
   final _picker = ImagePicker();
   bool _isLoading = false;
   String? _errorMessage;
@@ -187,13 +189,13 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
   void didChangeMetrics() {
     final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
     final newKeyboardVisible = bottomInset > 0.0;
-    if (_keyboardVisible && !newKeyboardVisible) {
-      // Keyboard baru saja ditutup, unfocus semua field
-      FocusScopeNode currentFocus = FocusScope.of(context);
-      if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
-        currentFocus.unfocus();
-      }
-    }
+    // Hapus/uncomment logic unfocus otomatis agar keyboard tidak menutup sendiri
+    // if (_keyboardVisible && !newKeyboardVisible) {
+    //   FocusScopeNode currentFocus = FocusScope.of(context);
+    //   if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
+    //     currentFocus.unfocus();
+    //   }
+    // }
     _keyboardVisible = newKeyboardVisible;
     super.didChangeMetrics();
   }
@@ -232,9 +234,15 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                 onPressed: _resetMovieForm,
                 style: TextButton.styleFrom(
                   backgroundColor: Colors.red,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                 ),
-                child: const Text('Batal Edit', style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  'Batal Edit',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
           ],
         ),
@@ -292,9 +300,20 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                   _buildSearchMovieField(),
                   if (_selectedMovie != null) _buildIdField(),
                   const SizedBox(height: 12),
-                  _buildTextField(_judulController, 'Judul', 'Masukkan judul', key: _judulFieldKey),
+                  _buildTextField(
+                    _judulController,
+                    'Judul',
+                    'Masukkan judul',
+                    key: _judulFieldKey,
+                  ),
                   const SizedBox(height: 12),
-                  _buildTextField(_sinopsisController, 'Sinopsis', 'Masukkan sinopsis', maxLines: 3, key: _sinopsisFieldKey),
+                  _buildTextField(
+                    _sinopsisController,
+                    'Sinopsis',
+                    'Masukkan sinopsis',
+                    maxLines: 3,
+                    key: _sinopsisFieldKey,
+                  ),
                   const SizedBox(height: 12),
                   _buildYearPicker(),
                   const SizedBox(height: 12),
@@ -307,9 +326,21 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(child: _buildNumberPicker('Episode', _selectedEpisode, _pickEpisode)),
+                      Expanded(
+                        child: _buildNumberPicker(
+                          'Episode',
+                          _selectedEpisode,
+                          _pickEpisode,
+                        ),
+                      ),
                       const SizedBox(width: 8),
-                      Expanded(child: _buildNumberPicker('Durasi', _selectedDuration, _pickDuration)),
+                      Expanded(
+                        child: _buildNumberPicker(
+                          'Durasi',
+                          _selectedDuration,
+                          _pickDuration,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -339,24 +370,34 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        icon: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Icon(Icons.upload),
+                        icon:
+                            _isLoading
+                                ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                                : const Icon(Icons.upload),
                         label: Text(_isLoading ? 'Proses...' : 'Submit'),
                         onPressed: _isLoading ? null : _submit,
-                        style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                        ),
                       ),
                     ),
                   if (_selectedMovie != null) ...[
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        icon: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Icon(Icons.update),
+                        icon:
+                            _isLoading
+                                ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                                : const Icon(Icons.update),
                         label: Text(_isLoading ? 'Proses...' : 'Update Movie'),
                         onPressed: _isLoading ? null : _updateMovie,
-                        style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -395,21 +436,23 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                   labelText: 'Cari Movie (untuk edit)',
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchMovieController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            setState(() {
-                              _searchMovieController.clear();
-                              _searchMovieResults.clear();
-                              _errorMessage = null;
-                            });
-                          },
-                        )
-                      : null,
+                  suffixIcon:
+                      _searchMovieController.text.isNotEmpty
+                          ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() {
+                                _searchMovieController.clear();
+                                _searchMovieResults.clear();
+                                _errorMessage = null;
+                              });
+                            },
+                          )
+                          : null,
                 ),
                 onChanged: (value) {
-                  if (_debounceMovie?.isActive ?? false) _debounceMovie!.cancel();
+                  if (_debounceMovie?.isActive ?? false)
+                    _debounceMovie!.cancel();
                   setState(() {}); // Untuk update suffixIcon
                   if (value.isEmpty) {
                     setState(() {
@@ -418,27 +461,37 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                     });
                     return;
                   }
-                  _debounceMovie = Timer(const Duration(milliseconds: 1000), () {
-                    if (value.isNotEmpty) {
-                      _searchMovie();
-                    }
-                  });
+                  _debounceMovie = Timer(
+                    const Duration(milliseconds: 1000),
+                    () {
+                      if (value.isNotEmpty) {
+                        _searchMovie();
+                      }
+                    },
+                  );
                 },
               ),
             ),
             const SizedBox(width: 8),
             ElevatedButton(
-              onPressed: _isSearchingMovie ? null : () {
-                _searchMovie();
-                FocusScope.of(context).unfocus();
-              },
-              child: _isSearchingMovie
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('Cari'),
+              onPressed:
+                  _isSearchingMovie
+                      ? null
+                      : () {
+                        _searchMovie();
+                        FocusScope.of(context).unfocus();
+                      },
+              child:
+                  _isSearchingMovie
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                      : const Text('Cari'),
             ),
           ],
         ),
@@ -449,21 +502,24 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
 
   Widget _buildSearchMovieResults() {
     // Tampilkan snackbar error hanya jika pencarian sudah selesai dan user tidak sedang mengetik
-    if (_searchMovieController.text.isNotEmpty && !_isSearchingMovie && _searchMovieResults.isEmpty && (_debounceMovie == null || !_debounceMovie!.isActive)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).removeCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Movie tidak tersedia'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.only(bottom: 80, left: 16, right: 16),
-            ),
-          );
-        }
-      });
+    if (_searchMovieController.text.isNotEmpty &&
+        !_isSearchingMovie &&
+        _searchMovieResults.isEmpty &&
+        (_debounceMovie == null || !_debounceMovie!.isActive)) {
+      // WidgetsBinding.instance.addPostFrameCallback((_) {
+      //   if (mounted) {
+      //     ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      //     ScaffoldMessenger.of(context).showSnackBar(
+      //       const SnackBar(
+      //         content: Text('Movie tidak tersedia'),
+      //         backgroundColor: Colors.red,
+      //         duration: Duration(seconds: 2),
+      //         behavior: SnackBarBehavior.floating,
+      //         margin: EdgeInsets.only(bottom: 80, left: 16, right: 16),
+      //       ),
+      //     );
+      //   }
+      // });
     }
     if (_searchMovieResults.isEmpty) return const SizedBox();
     return Container(
@@ -479,32 +535,45 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
         itemBuilder: (context, index) {
           final movie = _searchMovieResults[index];
           return ListTile(
-            leading: movie.coverUrl.isNotEmpty
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      movie.coverUrl,
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, size: 50),
-                    ),
-                  )
-                : const Icon(Icons.movie, size: 50),
+            leading:
+                movie.coverUrl.isNotEmpty
+                    ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        movie.coverUrl,
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                        errorBuilder:
+                            (context, error, stackTrace) =>
+                                const Icon(Icons.error, size: 50),
+                      ),
+                    )
+                    : const Icon(Icons.movie, size: 50),
             title: Text(movie.judul),
             onTap: () async {
-              setState(() { _isLoading = true; });
+              setState(() {
+                _isLoading = true;
+              });
               try {
-                final detailMovie = await _movieApiService.getMovieDetail(movie.id);
+                final detailMovie = await _movieApiService.getMovieDetail(
+                  movie.id,
+                );
                 _selectMovie(detailMovie);
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Gagal mengambil detail movie: $e'), backgroundColor: Colors.red),
+                    SnackBar(
+                      content: Text('Gagal mengambil detail movie: $e'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               } finally {
-                if (mounted) setState(() { _isLoading = false; });
+                if (mounted)
+                  setState(() {
+                    _isLoading = false;
+                  });
               }
             },
           );
@@ -523,7 +592,9 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
       _searchMovieResults.clear();
     });
     try {
-      final results = await _movieApiService.searchMovies(_searchMovieController.text);
+      final results = await _movieApiService.searchMovies(
+        _searchMovieController.text,
+      );
       setState(() {
         _searchMovieResults.addAll(results);
       });
@@ -546,7 +617,6 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
       _selectedEpisode = movie.episode;
       _selectedGenres = List<movie_model.Genre>.from(movie.genres);
       _selectedThemes = List<movie_model.ThemeMovie>.from(movie.themes);
-      // Isi _staffs dari movie.staffs (mapping manual ke staff_model.Staff)
       _staffs = [];
       for (final staff in movie.staffs) {
         final staffForm = StaffForm();
@@ -555,7 +625,7 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
           name: staff.name,
           role: staff.role,
           profileUrl: staff.profileUrl,
-          bio: '', // Atau null jika bio nullable
+          bio: '',
         );
         _staffs.add(staffForm);
       }
@@ -563,20 +633,32 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
       for (int i = 0; i < movie.seiyus.length && i < movie.karakters.length; i++) {
         final seiyu = movie.seiyus[i];
         final karakter = movie.karakters[i];
-        _seiyuKarakterPairs.add(SeiyuKarakterPairForm(
-          seiyu: seiyu_model.Seiyu(
-            id: seiyu.id,
-            name: seiyu.name,
-            profileUrl: seiyu.profileUrl,
+        _seiyuKarakterPairs.add(
+          SeiyuKarakterPairForm(
+            seiyu: seiyu_model.Seiyu(
+              id: seiyu.id,
+              name: seiyu.name,
+              profileUrl: seiyu.profileUrl,
+            ),
+            karakter: karakter_model.Karakter(
+              id: karakter.id,
+              nama: karakter.nama,
+              profileUrl: karakter.profileUrl,
+            ),
           ),
-          karakter: karakter_model.Karakter(
-            id: karakter.id,
-            nama: karakter.nama,
-            profileUrl: karakter.profileUrl,
-          ),
-        ));
+        );
       }
-      _coverImage = null;
+      // Deteksi cover dari URL atau file
+      if (movie.coverUrl.isNotEmpty && (movie.coverUrl.startsWith('http') || movie.coverUrl.startsWith('https'))) {
+        _coverImageFile = null;
+        _coverImageUrl = movie.coverUrl;
+      } else if (movie.coverUrl.isNotEmpty) {
+        _coverImageFile = File(movie.coverUrl);
+        _coverImageUrl = null;
+      } else {
+        _coverImageFile = null;
+        _coverImageUrl = null;
+      }
       _searchMovieController.clear();
       _searchMovieResults.clear();
     });
@@ -596,13 +678,20 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
       _selectedThemes.clear();
       _staffs.clear();
       _seiyuKarakterPairs.clear();
-      _coverImage = null;
+      _coverImageFile = null;
+      _coverImageUrl = null;
       _selectedMovie = null;
       _errorMessage = null;
     });
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, String error, {int maxLines = 1, Key? key}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    String error, {
+    int maxLines = 1,
+    Key? key,
+  }) {
     // Pasang FocusNode khusus untuk sinopsis
     return TextFormField(
       key: key,
@@ -618,7 +707,10 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
     return InkWell(
       onTap: _pickYear,
       child: InputDecorator(
-        decoration: const InputDecoration(labelText: 'Tahun Rilis', border: OutlineInputBorder()),
+        decoration: const InputDecoration(
+          labelText: 'Tahun Rilis',
+          border: OutlineInputBorder(),
+        ),
         child: Text('$_selectedYear'),
       ),
     );
@@ -634,17 +726,30 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
       key: key,
       value: controller.text.isEmpty ? null : controller.text,
       decoration: InputDecoration(labelText: label),
-      items: items.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+      items:
+          items
+              .map(
+                (value) => DropdownMenuItem(value: value, child: Text(value)),
+              )
+              .toList(),
       onChanged: (value) => setState(() => controller.text = value ?? ''),
-      validator: (value) => value == null || value.isEmpty ? 'Pilih $label' : null,
+      validator:
+          (value) => value == null || value.isEmpty ? 'Pilih $label' : null,
     );
   }
 
-  Widget _buildNumberPicker(String label, int value, Future<void> Function() onTap) {
+  Widget _buildNumberPicker(
+    String label,
+    int value,
+    Future<void> Function() onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       child: InputDecorator(
-        decoration: InputDecoration(labelText: label, border: OutlineInputBorder()),
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(),
+        ),
         child: Text('$value'),
       ),
     );
@@ -661,9 +766,15 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label),
-        ...items.map((item) => (item as dynamic).build(context, onRemove: () => setState(() => items.remove(item)))),
+        ...items.map(
+          (item) => (item as dynamic).build(
+            context,
+            onRemove: () => setState(() => items.remove(item)),
+          ),
+        ),
         if (showAddButton)
-          ElevatedButton.icon(            onPressed: () {
+          ElevatedButton.icon(
+            onPressed: () {
               setState(() {
                 _searchStaffController.clear();
                 _searchStaffResults.clear();
@@ -671,13 +782,15 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
               });
               showDialog(
                 context: context,
-                builder: (context) => SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  height: MediaQuery.of(context).size.height * 0.7,
-                  child: _buildStaffSearchDialog(),
-                ),
+                builder:
+                    (context) => SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.9,
+                      height: MediaQuery.of(context).size.height * 0.7,
+                      child: _buildStaffSearchDialog(),
+                    ),
               ).then((selectedStaff) {
-                if (selectedStaff != null && selectedStaff is staff_model.Staff) {
+                if (selectedStaff != null &&
+                    selectedStaff is staff_model.Staff) {
                   setState(() {
                     final staffForm = StaffForm();
                     staffForm.selectedStaff = selectedStaff;
@@ -687,7 +800,8 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                     _searchStaffResults.clear();
                   });
                 }
-                FocusScope.of(context).unfocus();
+                // Hapus unfocus di sini agar tidak scroll ke atas setelah dialog ditutup
+                // FocusScope.of(context).unfocus();
               });
             },
             icon: const Icon(Icons.add),
@@ -709,24 +823,25 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _allGenres.map((genre) {
-            final isSelected = _selectedGenres.any((g) => g.id == genre.id);
-            return FilterChip(
-              label: Text(genre.nama),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    if (!_selectedGenres.any((g) => g.id == genre.id)) {
-                      _selectedGenres.add(genre);
-                    }
-                  } else {
-                    _selectedGenres.removeWhere((g) => g.id == genre.id);
-                  }
-                });
-              },
-            );
-          }).toList(),
+          children:
+              _allGenres.map((genre) {
+                final isSelected = _selectedGenres.any((g) => g.id == genre.id);
+                return FilterChip(
+                  label: Text(genre.nama),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        if (!_selectedGenres.any((g) => g.id == genre.id)) {
+                          _selectedGenres.add(genre);
+                        }
+                      } else {
+                        _selectedGenres.removeWhere((g) => g.id == genre.id);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
         ),
       ],
     );
@@ -744,24 +859,25 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _allThemes.map((theme) {
-            final isSelected = _selectedThemes.any((t) => t.id == theme.id);
-            return FilterChip(
-              label: Text(theme.nama),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    if (!_selectedThemes.any((t) => t.id == theme.id)) {
-                      _selectedThemes.add(theme);
-                    }
-                  } else {
-                    _selectedThemes.removeWhere((t) => t.id == theme.id);
-                  }
-                });
-              },
-            );
-          }).toList(),
+          children:
+              _allThemes.map((theme) {
+                final isSelected = _selectedThemes.any((t) => t.id == theme.id);
+                return FilterChip(
+                  label: Text(theme.nama),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        if (!_selectedThemes.any((t) => t.id == theme.id)) {
+                          _selectedThemes.add(theme);
+                        }
+                      } else {
+                        _selectedThemes.removeWhere((t) => t.id == theme.id);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
         ),
       ],
     );
@@ -778,14 +894,23 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
           border: Border.all(color: Colors.grey),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: _coverImage == null
+        child: _coverImageFile == null && (_coverImageUrl == null || _coverImageUrl!.isEmpty)
             ? const Center(child: Text('Pilih Cover'))
             : ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.file(
-                  _coverImage!,
-                  fit: BoxFit.cover,
-                ),
+                child: _coverImageFile != null
+                    ? Image.file(
+                        _coverImageFile!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Center(child: Icon(Icons.broken_image, size: 80)),
+                      )
+                    : Image.network(
+                        _coverImageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Center(child: Icon(Icons.broken_image, size: 80)),
+                      ),
               ),
       ),
     );
@@ -809,24 +934,29 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                 children: [
                   Expanded(
                     child: InkWell(
-                      onTap: () async {                        // Reset search before showing dialog
+                      onTap: () async {
+                        // Reset search before showing dialog
                         setState(() {
                           _searchSeiyuController.clear();
                           _searchSeiyuResults.clear();
                           _isSearchingSeiyu = false;
                         });
-                        
-                        final selectedSeiyu = await showDialog<seiyu_model.Seiyu>(
+
+                        final selectedSeiyu = await showDialog<
+                          seiyu_model.Seiyu
+                        >(
                           context: context,
-                          builder: (context) => SizedBox(
-                            width: MediaQuery.of(context).size.width * 0.9,
-                            height: MediaQuery.of(context).size.height * 0.7,
-                            child: _buildSeiyuSearchDialog(
-                              onSelected: (seiyu) {
-                                Navigator.pop(context, seiyu);
-                              },
-                            ),
-                          ),
+                          builder:
+                              (context) => SizedBox(
+                                width: MediaQuery.of(context).size.width * 0.9,
+                                height:
+                                    MediaQuery.of(context).size.height * 0.7,
+                                child: _buildSeiyuSearchDialog(
+                                  onSelected: (seiyu) {
+                                    Navigator.pop(context, seiyu);
+                                  },
+                                ),
+                              ),
                         );
                         if (selectedSeiyu != null) {
                           setState(() {
@@ -839,7 +969,10 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                         FocusScope.of(context).unfocus();
                       },
                       child: _buildPairCard(
-                        label: pair.seiyu != null ? pair.seiyu!.name : 'Pilih Seiyu',
+                        label:
+                            pair.seiyu != null
+                                ? pair.seiyu!.name
+                                : 'Pilih Seiyu',
                         imageUrl: pair.seiyu?.profileUrl,
                       ),
                     ),
@@ -847,24 +980,29 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                   const SizedBox(width: 8),
                   Expanded(
                     child: InkWell(
-                      onTap: () async {                        // Reset search before showing dialog
+                      onTap: () async {
+                        // Reset search before showing dialog
                         setState(() {
                           _searchKarakterController.clear();
                           _searchKarakterResults.clear();
                           _isSearchingKarakter = false;
                         });
-                        
-                        final selectedKarakter = await showDialog<karakter_model.Karakter>(
+
+                        final selectedKarakter = await showDialog<
+                          karakter_model.Karakter
+                        >(
                           context: context,
-                          builder: (context) => SizedBox(
-                            width: MediaQuery.of(context).size.width * 0.9,
-                            height: MediaQuery.of(context).size.height * 0.7,
-                            child: _buildKarakterSearchDialog(
-                              onSelected: (karakter) {
-                                Navigator.pop(context, karakter);
-                              },
-                            ),
-                          ),
+                          builder:
+                              (context) => SizedBox(
+                                width: MediaQuery.of(context).size.width * 0.9,
+                                height:
+                                    MediaQuery.of(context).size.height * 0.7,
+                                child: _buildKarakterSearchDialog(
+                                  onSelected: (karakter) {
+                                    Navigator.pop(context, karakter);
+                                  },
+                                ),
+                              ),
                         );
                         if (selectedKarakter != null) {
                           setState(() {
@@ -877,14 +1015,18 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                         FocusScope.of(context).unfocus();
                       },
                       child: _buildPairCard(
-                        label: pair.karakter != null ? pair.karakter!.nama : 'Pilih Karakter',
+                        label:
+                            pair.karakter != null
+                                ? pair.karakter!.nama
+                                : 'Pilih Karakter',
                         imageUrl: pair.karakter?.profileUrl,
                       ),
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete),
-                    onPressed: () => setState(() => _seiyuKarakterPairs.removeAt(idx)),
+                    onPressed:
+                        () => setState(() => _seiyuKarakterPairs.removeAt(idx)),
                   ),
                 ],
               );
@@ -920,7 +1062,9 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                   width: 40,
                   height: 40,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, size: 40),
+                  errorBuilder:
+                      (context, error, stackTrace) =>
+                          const Icon(Icons.error, size: 40),
                 ),
               )
             else
@@ -938,79 +1082,97 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
     final lastYear = DateTime.now().year + 5;
     await showModalBottomSheet(
       context: context,
-      builder: (_) => SizedBox(
-        height: 300,
-        child: YearPicker(
-          firstDate: DateTime(firstYear),
-          lastDate: DateTime(lastYear),
-          initialDate: DateTime(_selectedYear),
-          selectedDate: DateTime(_selectedYear),
-          onChanged: (date) {
-            setState(() => _selectedYear = date.year);
-            Navigator.pop(context);
-            FocusScope.of(context).unfocus(); // unfocus setelah pilih tahun
-          },
-        ),
-      ),
+      builder:
+          (_) => SizedBox(
+            height: 300,
+            child: YearPicker(
+              firstDate: DateTime(firstYear),
+              lastDate: DateTime(lastYear),
+              initialDate: DateTime(_selectedYear),
+              selectedDate: DateTime(_selectedYear),
+              onChanged: (date) {
+                setState(() => _selectedYear = date.year);
+                Navigator.pop(context);
+                FocusScope.of(context).unfocus(); // unfocus setelah pilih tahun
+              },
+            ),
+          ),
     );
     FocusScope.of(context).unfocus(); // unfocus setelah pilih tahun
   }
 
-  Future<void> _pickDuration() => _showNumberPicker('Durasi (menit)', _selectedDuration, (value) {
-    setState(() => _selectedDuration = value);
-    FocusScope.of(context).unfocus(); // unfocus setelah pilih durasi
-  });
-  Future<void> _pickEpisode() => _showNumberPicker('Episode', _selectedEpisode, (value) {
-    setState(() => _selectedEpisode = value);
-    FocusScope.of(context).unfocus(); // unfocus setelah pilih episode
-  });
+  Future<void> _pickDuration() =>
+      _showNumberPicker('Durasi (menit)', _selectedDuration, (value) {
+        setState(() => _selectedDuration = value);
+        FocusScope.of(context).unfocus(); // unfocus setelah pilih durasi
+      });
+  Future<void> _pickEpisode() =>
+      _showNumberPicker('Episode', _selectedEpisode, (value) {
+        setState(() => _selectedEpisode = value);
+        FocusScope.of(context).unfocus(); // unfocus setelah pilih episode
+      });
 
-  Future<void> _showNumberPicker(String title, int initialValue, ValueChanged<int> onConfirm) async {
+  Future<void> _showNumberPicker(
+    String title,
+    int initialValue,
+    ValueChanged<int> onConfirm,
+  ) async {
     int temp = initialValue;
     await showModalBottomSheet(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setModalState) => SizedBox(
-          height: 250,
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              Text(title, style: const TextStyle(fontSize: 16)),
-              Expanded(
-                child: Center(
-                  child: FractionallySizedBox(
-                    widthFactor: 0.7,
-                    child: NumberPicker(
-                      value: temp,
-                      minValue: 1,
-                      maxValue: 500,
-                      onChanged: (v) => setModalState(() => temp = v),
-                      infiniteLoop: true,
-                    ),
+      builder:
+          (_) => StatefulBuilder(
+            builder:
+                (context, setModalState) => SizedBox(
+                  height: 250,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      Text(title, style: const TextStyle(fontSize: 16)),
+                      Expanded(
+                        child: Center(
+                          child: FractionallySizedBox(
+                            widthFactor: 0.7,
+                            child: NumberPicker(
+                              value: temp,
+                              minValue: 1,
+                              maxValue: 500,
+                              onChanged: (v) => setModalState(() => temp = v),
+                              infiniteLoop: true,
+                            ),
+                          ),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          onConfirm(temp);
+                          Navigator.pop(context);
+                          FocusScope.of(
+                            context,
+                          ).unfocus(); // unfocus setelah pilih durasi/episode
+                        },
+                        child: const Text('OK'),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  onConfirm(temp);
-                  Navigator.pop(context);
-                  FocusScope.of(context).unfocus(); // unfocus setelah pilih durasi/episode
-                },
-                child: const Text('OK'),
-              ),
-            ],
           ),
-        ),
-      ),
     );
   }
 
   Future<void> _pickCover() async {
     final image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) setState(() => _coverImage = File(image.path));
+    if (image != null) {
+      setState(() {
+        _coverImageFile = File(image.path);
+        _coverImageUrl = null;
+      });
+    }
   }
 
-  Future<void> _searchKarakter(void Function(void Function()) setModalState) async {
+  Future<void> _searchKarakter(
+    void Function(void Function()) setModalState,
+  ) async {
     if (_searchKarakterController.text.isEmpty) {
       return;
     }
@@ -1033,7 +1195,9 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
     }
   }
 
-  Future<void> _searchSeiyu(void Function(void Function()) setModalState) async {
+  Future<void> _searchSeiyu(
+    void Function(void Function()) setModalState,
+  ) async {
     if (_searchSeiyuController.text.isEmpty) {
       setModalState(() {
         _searchSeiyuResults.clear();
@@ -1059,7 +1223,9 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
     }
   }
 
-  Future<void> _searchStaff(void Function(void Function()) setModalState) async {
+  Future<void> _searchStaff(
+    void Function(void Function()) setModalState,
+  ) async {
     if (_searchStaffController.text.isEmpty) {
       setModalState(() {
         _searchStaffResults.clear();
@@ -1102,7 +1268,7 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
       await _ensureVisible(_ratingFieldKey);
       return;
     }
-    if (_coverImage == null) {
+    if (_coverImageFile == null && (_coverImageUrl == null || _coverImageUrl!.isEmpty)) {
       await _ensureVisible(_coverFieldKey);
       return;
     }
@@ -1121,8 +1287,8 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate() || _coverImage == null) {
-      if (_coverImage == null) {
+    if (!_formKey.currentState!.validate() || _coverImageFile == null) {
+      if (_coverImageFile == null) {
         setState(() {
           _errorMessage = 'Pilih cover terlebih dahulu';
         });
@@ -1131,18 +1297,21 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
       return;
     }
     try {
-      final staffIds = _staffs
-          .where((f) => f.selectedStaff != null)
-          .map((f) => f.selectedStaff!.id)
-          .toList();
-      final seiyuIds = _seiyuKarakterPairs
-          .where((pair) => pair.seiyu != null)
-          .map((pair) => pair.seiyu!.id)
-          .toList();
-      final karakterIds = _seiyuKarakterPairs
-          .where((pair) => pair.karakter != null)
-          .map((pair) => pair.karakter!.id)
-          .toList();
+      final staffIds =
+          _staffs
+              .where((f) => f.selectedStaff != null)
+              .map((f) => f.selectedStaff!.id)
+              .toList();
+      final seiyuIds =
+          _seiyuKarakterPairs
+              .where((pair) => pair.seiyu != null)
+              .map((pair) => pair.seiyu!.id)
+              .toList();
+      final karakterIds =
+          _seiyuKarakterPairs
+              .where((pair) => pair.karakter != null)
+              .map((pair) => pair.karakter!.id)
+              .toList();
       final genreIds = _selectedGenres.map((g) => g.id).toList();
       final themeIds = _selectedThemes.map((t) => t.id).toList();
 
@@ -1159,9 +1328,11 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
         staffIds: staffIds,
         seiyuIds: seiyuIds,
         karakterIds: karakterIds,
-        coverImage: _coverImage!,
+        coverImage: _coverImageFile!,
       );
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Movie berhasil diupload!')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Movie berhasil diupload!')));
       _resetMovieForm();
       setState(() => _isLoading = false);
     } catch (e) {
@@ -1179,9 +1350,12 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
       return;
     }
     try {
-      final staffIds = _staffs.where((f) => f.selectedStaff != null).map((f) => f.selectedStaff!.id).toList();
-      final seiyuIds = _seiyuKarakterPairs.where((pair) => pair.seiyu != null).map((pair) => pair.seiyu!.id).toList();
-      final karakterIds = _seiyuKarakterPairs.where((pair) => pair.karakter != null).map((pair) => pair.karakter!.id).toList();
+      final staffIds =
+          _staffs.where((f) => f.selectedStaff != null).map((f) => f.selectedStaff!.id).toList();
+      final seiyuIds =
+          _seiyuKarakterPairs.where((pair) => pair.seiyu != null).map((pair) => pair.seiyu!.id).toList();
+      final karakterIds =
+          _seiyuKarakterPairs.where((pair) => pair.karakter != null).map((pair) => pair.karakter!.id).toList();
       final genreIds = _selectedGenres.map((g) => g.id).toList();
       final themeIds = _selectedThemes.map((t) => t.id).toList();
       await _movieApiService.updateMovie(
@@ -1198,11 +1372,13 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
         staffIds: staffIds,
         seiyuIds: seiyuIds,
         karakterIds: karakterIds,
-        coverImage: _coverImage,
+        coverImage: _coverImageFile, // hanya kirim file jika user pilih gambar baru
       );
       _resetMovieForm();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Update Movie berhasil!')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Update Movie berhasil!')));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -1224,7 +1400,9 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
       await _movieApiService.deleteMovie(_selectedMovie!.id);
       _resetMovieForm();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Movie berhasil dihapus!')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Movie berhasil dihapus!')));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -1243,7 +1421,9 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
       builder: (context) {
         return AlertDialog(
           title: const Text('Konfirmasi Hapus'),
-          content: Text('Apakah Anda yakin ingin menghapus movie "${_selectedMovie!.judul}"?'),
+          content: Text(
+            'Apakah Anda yakin ingin menghapus movie "${_selectedMovie!.judul}"?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -1263,7 +1443,9 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
     }
   }
 
-  Widget _buildKarakterSearchDialog({required Function(karakter_model.Karakter) onSelected}) {
+  Widget _buildKarakterSearchDialog({
+    required Function(karakter_model.Karakter) onSelected,
+  }) {
     return Dialog(
       child: WillPopScope(
         onWillPop: () async {
@@ -1290,7 +1472,10 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                       const SizedBox(width: 8),
-                      const Text('Pencarian Karakter', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Pencarian Karakter',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -1302,20 +1487,22 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                           decoration: InputDecoration(
                             labelText: 'Cari Karakter',
                             border: const OutlineInputBorder(),
-                            suffixIcon: _searchKarakterController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear),
-                                    onPressed: () {
-                                      setModalState(() {
-                                        _searchKarakterController.clear();
-                                        _searchKarakterResults.clear();
-                                      });
-                                    },
-                                  )
-                                : null,
+                            suffixIcon:
+                                _searchKarakterController.text.isNotEmpty
+                                    ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        setModalState(() {
+                                          _searchKarakterController.clear();
+                                          _searchKarakterResults.clear();
+                                        });
+                                      },
+                                    )
+                                    : null,
                           ),
                           onChanged: (value) {
-                            if (_debounceKarakter?.isActive ?? false) _debounceKarakter!.cancel();
+                            if (_debounceKarakter?.isActive ?? false)
+                              _debounceKarakter!.cancel();
                             setModalState(() {}); // Untuk update suffixIcon
                             if (value.isEmpty) {
                               setModalState(() {
@@ -1323,70 +1510,94 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                               });
                               return;
                             }
-                            _debounceKarakter = Timer(const Duration(milliseconds: 1000), () {
-                              if (value.isNotEmpty) {
-                                _searchKarakter(setModalState);
-                              }
-                            });
+                            _debounceKarakter = Timer(
+                              const Duration(milliseconds: 1000),
+                              () {
+                                if (value.isNotEmpty) {
+                                  _searchKarakter(setModalState);
+                                }
+                              },
+                            );
                           },
-                          onFieldSubmitted: (_) => _searchKarakter(setModalState),
+                          onFieldSubmitted:
+                              (_) => _searchKarakter(setModalState),
                         ),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: _isSearchingKarakter ? null : () => _searchKarakter(setModalState),
-                        child: _isSearchingKarakter
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('Cari'),
+                        onPressed:
+                            _isSearchingKarakter
+                                ? null
+                                : () => _searchKarakter(setModalState),
+                        child:
+                            _isSearchingKarakter
+                                ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                  ),
+                                )
+                                : const Text('Cari'),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),                  Expanded(
-                    child: _isSearchingKarakter
-                        ? const Center(child: CircularProgressIndicator())
-                        : _searchKarakterController.text.isEmpty
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child:
+                        _isSearchingKarakter
+                            ? const Center(child: CircularProgressIndicator())
+                            : _searchKarakterController.text.isEmpty
                             ? const SizedBox()
                             : _searchKarakterResults.isEmpty
-                                ? const Center(child: Text('data tidak ditemukan'))
-                                : ListView.separated(
-                                    shrinkWrap: true,
-                                    itemCount: _searchKarakterResults.length,
-                                    separatorBuilder: (_, __) => const Divider(),
-                                    itemBuilder: (context, index) {
-                                      final karakter = _searchKarakterResults[index];
-                                      return ListTile(
-                                        leading: karakter.profileUrl != null && karakter.profileUrl!.isNotEmpty
-                                            ? ClipRRect(
-                                                borderRadius: BorderRadius.circular(8),
-                                                child: Image.network(
-                                                  karakter.profileUrl!,
-                                                  width: 50,
-                                                  height: 50,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, size: 50),
-                                                ),
-                                              )
-                                            : const Icon(Icons.person, size: 50),
-                                        title: Text(karakter.nama),
-                                        subtitle: Text(karakter.bio ?? 'Tidak ada bio'),
-                                        onTap: () {
-                                          FocusScope.of(context).unfocus();
-                                          // Clear search controller here to ensure UI refreshes properly
-                                          setModalState(() {
-                                            _searchKarakterController.clear();
-                                            _searchKarakterResults.clear();
-                                          });
-                                          Navigator.pop(context, karakter);
-                                        },
-                                      );
-                                    },
+                            ? const Center(child: Text('data tidak ditemukan'))
+                            : ListView.separated(
+                              shrinkWrap: true,
+                              itemCount: _searchKarakterResults.length,
+                              separatorBuilder: (_, __) => const Divider(),
+                              itemBuilder: (context, index) {
+                                final karakter = _searchKarakterResults[index];
+                                return ListTile(
+                                  leading:
+                                      karakter.profileUrl != null &&
+                                              karakter.profileUrl!.isNotEmpty
+                                          ? ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            child: Image.network(
+                                              karakter.profileUrl!,
+                                              width: 50,
+                                              height: 50,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => const Icon(
+                                                    Icons.error,
+                                                    size: 50,
+                                                  ),
+                                            ),
+                                          )
+                                          : const Icon(Icons.person, size: 50),
+                                  title: Text(karakter.nama),
+                                  subtitle: Text(
+                                    karakter.bio ?? 'Tidak ada bio',
                                   ),
+                                  onTap: () {
+                                    FocusScope.of(context).unfocus();
+                                    // Clear search controller here to ensure UI refreshes properly
+                                    setModalState(() {
+                                      _searchKarakterController.clear();
+                                      _searchKarakterResults.clear();
+                                    });
+                                    Navigator.pop(context, karakter);
+                                  },
+                                );
+                              },
+                            ),
                   ),
                 ],
               ),
@@ -1397,7 +1608,9 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
     );
   }
 
-  Widget _buildSeiyuSearchDialog({required Function(seiyu_model.Seiyu) onSelected}) {
+  Widget _buildSeiyuSearchDialog({
+    required Function(seiyu_model.Seiyu) onSelected,
+  }) {
     return Dialog(
       child: WillPopScope(
         onWillPop: () async {
@@ -1424,7 +1637,10 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                       const SizedBox(width: 8),
-                      const Text('Pencarian Seiyu', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Pencarian Seiyu',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -1436,20 +1652,22 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                           decoration: InputDecoration(
                             labelText: 'Cari Seiyu',
                             border: const OutlineInputBorder(),
-                            suffixIcon: _searchSeiyuController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear),
-                                    onPressed: () {
-                                      setModalState(() {
-                                        _searchSeiyuController.clear();
-                                        _searchSeiyuResults.clear();
-                                      });
-                                    },
-                                  )
-                                : null,
+                            suffixIcon:
+                                _searchSeiyuController.text.isNotEmpty
+                                    ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        setModalState(() {
+                                          _searchSeiyuController.clear();
+                                          _searchSeiyuResults.clear();
+                                        });
+                                      },
+                                    )
+                                    : null,
                           ),
                           onChanged: (value) {
-                            if (_debounceSeiyu?.isActive ?? false) _debounceSeiyu!.cancel();
+                            if (_debounceSeiyu?.isActive ?? false)
+                              _debounceSeiyu!.cancel();
                             setModalState(() {}); // Untuk update suffixIcon
                             if (value.isEmpty) {
                               setModalState(() {
@@ -1457,70 +1675,91 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                               });
                               return;
                             }
-                            _debounceSeiyu = Timer(const Duration(milliseconds: 1000), () {
-                              if (value.isNotEmpty) {
-                                _searchSeiyu(setModalState);
-                              }
-                            });
+                            _debounceSeiyu = Timer(
+                              const Duration(milliseconds: 1000),
+                              () {
+                                if (value.isNotEmpty) {
+                                  _searchSeiyu(setModalState);
+                                }
+                              },
+                            );
                           },
                           onFieldSubmitted: (_) => _searchSeiyu(setModalState),
                         ),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: _isSearchingSeiyu ? null : () => _searchSeiyu(setModalState),
-                        child: _isSearchingSeiyu
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('Cari'),
+                        onPressed:
+                            _isSearchingSeiyu
+                                ? null
+                                : () => _searchSeiyu(setModalState),
+                        child:
+                            _isSearchingSeiyu
+                                ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                  ),
+                                )
+                                : const Text('Cari'),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),                  Expanded(
-                    child: _isSearchingSeiyu
-                        ? const Center(child: CircularProgressIndicator())
-                        : _searchSeiyuController.text.isEmpty
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child:
+                        _isSearchingSeiyu
+                            ? const Center(child: CircularProgressIndicator())
+                            : _searchSeiyuController.text.isEmpty
                             ? const SizedBox()
                             : _searchSeiyuResults.isEmpty
-                                ? const Center(child: Text('data tidak ditemukan'))
-                                : ListView.separated(
-                                    shrinkWrap: true,
-                                    itemCount: _searchSeiyuResults.length,
-                                    separatorBuilder: (_, __) => const Divider(),
-                                    itemBuilder: (context, index) {
-                                      final seiyu = _searchSeiyuResults[index];
-                                      return ListTile(
-                                        leading: seiyu.profileUrl != null && seiyu.profileUrl!.isNotEmpty
-                                            ? ClipRRect(
-                                                borderRadius: BorderRadius.circular(8),
-                                                child: Image.network(
-                                                  seiyu.profileUrl!,
-                                                  width: 50,
-                                                  height: 50,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, size: 50),
-                                                ),
-                                              )
-                                            : const Icon(Icons.person, size: 50),
-                                        title: Text(seiyu.name),
-                                        subtitle: Text(seiyu.bio ?? 'Tidak ada bio'),
-                                        onTap: () {
-                                          FocusScope.of(context).unfocus();
-                                          // Clear search controller here to ensure UI refreshes properly
-                                          setModalState(() {
-                                            _searchSeiyuController.clear();
-                                            _searchSeiyuResults.clear();
-                                          });
-                                          Navigator.pop(context, seiyu);
-                                        },
-                                      );
-                                    },
-                                  ),
+                            ? const Center(child: Text('data tidak ditemukan'))
+                            : ListView.separated(
+                              shrinkWrap: true,
+                              itemCount: _searchSeiyuResults.length,
+                              separatorBuilder: (_, __) => const Divider(),
+                              itemBuilder: (context, index) {
+                                final seiyu = _searchSeiyuResults[index];
+                                return ListTile(
+                                  leading:
+                                      seiyu.profileUrl != null &&
+                                              seiyu.profileUrl!.isNotEmpty
+                                          ? ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            child: Image.network(
+                                              seiyu.profileUrl!,
+                                              width: 50,
+                                              height: 50,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => const Icon(
+                                                    Icons.error,
+                                                    size: 50,
+                                                  ),
+                                            ),
+                                          )
+                                          : const Icon(Icons.person, size: 50),
+                                  title: Text(seiyu.name),
+                                  subtitle: Text(seiyu.bio ?? 'Tidak ada bio'),
+                                  onTap: () {
+                                    FocusScope.of(context).unfocus();
+                                    // Clear search controller here to ensure UI refreshes properly
+                                    setModalState(() {
+                                      _searchSeiyuController.clear();
+                                      _searchSeiyuResults.clear();
+                                    });
+                                    Navigator.pop(context, seiyu);
+                                  },
+                                );
+                              },
+                            ),
                   ),
                 ],
               ),
@@ -1558,7 +1797,10 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                       const SizedBox(width: 8),
-                      const Text('Pencarian Staff', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Pencarian Staff',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -1570,20 +1812,22 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                           decoration: InputDecoration(
                             labelText: 'Cari Staff',
                             border: const OutlineInputBorder(),
-                            suffixIcon: _searchStaffController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear),
-                                    onPressed: () {
-                                      setModalState(() {
-                                        _searchStaffController.clear();
-                                        _searchStaffResults.clear();
-                                      });
-                                    },
-                                  )
-                                : null,
+                            suffixIcon:
+                                _searchStaffController.text.isNotEmpty
+                                    ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        setModalState(() {
+                                          _searchStaffController.clear();
+                                          _searchStaffResults.clear();
+                                        });
+                                      },
+                                    )
+                                    : null,
                           ),
                           onChanged: (value) {
-                            if (_debounceStaff?.isActive ?? false) _debounceStaff!.cancel();
+                            if (_debounceStaff?.isActive ?? false)
+                              _debounceStaff!.cancel();
                             setModalState(() {}); // Untuk update suffixIcon
                             if (value.isEmpty) {
                               setModalState(() {
@@ -1591,35 +1835,40 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
                               });
                               return;
                             }
-                            _debounceStaff = Timer(const Duration(milliseconds: 1000), () {
-                              if (value.isNotEmpty) {
-                                _searchStaff(setModalState);
-                              }
-                            });
+                            _debounceStaff = Timer(
+                              const Duration(milliseconds: 1000),
+                              () {
+                                if (value.isNotEmpty) {
+                                  _searchStaff(setModalState);
+                                }
+                              },
+                            );
                           },
                           onFieldSubmitted: (_) => _searchStaff(setModalState),
                         ),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: _isSearchingStaff ? null : () => _searchStaff(setModalState),
-                        child: _isSearchingStaff
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('Cari'),
+                        onPressed:
+                            _isSearchingStaff
+                                ? null
+                                : () => _searchStaff(setModalState),
+                        child:
+                            _isSearchingStaff
+                                ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                                : const Text('Cari'),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Expanded(
-                    child: _buildStaffSearchResults(setModalState),
-                  ),
+                  Expanded(child: _buildStaffSearchResults(setModalState)),
                 ],
               ),
             );
@@ -1628,7 +1877,10 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
       ),
     );
   }
-  Widget _buildStaffSearchResults(void Function(void Function()) setModalState) {
+
+  Widget _buildStaffSearchResults(
+    void Function(void Function()) setModalState,
+  ) {
     if (_isSearchingStaff) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -1645,21 +1897,24 @@ class _MovieFormPageState extends State<MovieFormPage> with WidgetsBindingObserv
       itemBuilder: (context, index) {
         final staff = _searchStaffResults[index];
         return ListTile(
-          leading: staff.profileUrl != null && staff.profileUrl!.isNotEmpty
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    staff.profileUrl!,
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.error, size: 50),
-                  ),
-                )
-              : const Icon(Icons.person, size: 50),
+          leading:
+              staff.profileUrl != null && staff.profileUrl!.isNotEmpty
+                  ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      staff.profileUrl!,
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (context, error, stackTrace) =>
+                              const Icon(Icons.error, size: 50),
+                    ),
+                  )
+                  : const Icon(Icons.person, size: 50),
           title: Text(staff.name),
-          subtitle: Text(staff.bio ?? 'Tidak ada bio'),          onTap: () {
+          subtitle: Text(staff.bio ?? 'Tidak ada bio'),
+          onTap: () {
             FocusScope.of(context).unfocus();
             // Clear search controller here to ensure UI refreshes properly
             setModalState(() {
@@ -1683,7 +1938,8 @@ class StaffForm {
       children: [
         Row(
           children: [
-            if (selectedStaff?.profileUrl != null && (selectedStaff?.profileUrl?.isNotEmpty ?? false))
+            if (selectedStaff?.profileUrl != null &&
+                (selectedStaff?.profileUrl?.isNotEmpty ?? false))
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
@@ -1691,7 +1947,9 @@ class StaffForm {
                   width: 40,
                   height: 40,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, size: 40),
+                  errorBuilder:
+                      (context, error, stackTrace) =>
+                          const Icon(Icons.error, size: 40),
                 ),
               )
             else
