@@ -3,12 +3,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:weebase/service/preferences_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../service/movie_service.dart';
-import '../service/wishlist_service.dart';
-import '../model/movie_model.dart';
-import '../screen/movie_detail.dart';
-import '../screen/upload_data.dart';
-import '../model/user_model.dart';
+import '../../service/movie_service.dart';
+import '../../service/wishlist_service.dart';
+import '../../model/movie_model.dart';
+import '../detail_screen/movie_detail.dart';
+import '../upload_data.dart';
+import '../../model/user_model.dart';
 
 class MovieListScreen extends StatefulWidget {
   const MovieListScreen({super.key});

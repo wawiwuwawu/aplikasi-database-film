@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:weebase/screen/otp_verification_screen.dart';
+import 'package:weebase/screen/login_user/otp_verification_screen.dart';
 import 'package:weebase/service/auth_service.dart';
 
 const String kTermsAndConditions = '''

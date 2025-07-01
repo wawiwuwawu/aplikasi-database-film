@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../model/user_model.dart';
-import '../service/auth_service.dart'; // Sesuaikan path service updateUser()
+import '../../model/user_model.dart';
+import '../../service/auth_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final User user;

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:weebase/screen/edit_profile_screen.dart';
-import 'package:weebase/screen/forgot_password_screen.dart';
+import 'package:weebase/screen/profile/edit_profile_screen.dart';
+import '../login_user/forgot_password_screen.dart';
 import 'package:weebase/service/auth_service.dart';
-import '../model/user_model.dart';
+import '../../model/user_model.dart';
 
 class ProfileDetailScreen extends StatefulWidget {
   final User user;

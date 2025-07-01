@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:weebase/service/auth_service.dart';
-import 'package:weebase/screen/reset_password_screen.dart';
+import 'package:weebase/screen/login_user/reset_password_screen.dart';
 
 
 class ForgotPasswordScreen extends StatefulWidget {

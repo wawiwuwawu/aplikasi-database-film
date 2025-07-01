@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../model/staff_model.dart';
+import '../../model/staff_model.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../service/staff_service.dart';
-import '../service/movie_service.dart';
-import '../model/seiyu_model.dart';
-import '../model/movie_model.dart' as movie_model;
-import '../screen/movie_detail.dart';
-import '../screen/movie_list.dart';
+import '../../service/staff_service.dart';
+import '../../service/movie_service.dart';
+import '../../model/seiyu_model.dart';
+import '../../model/movie_model.dart' as movie_model;
+import 'movie_detail.dart';
+import '../main_screen/movie_list.dart';
 
 class StaffDetailScreen extends StatefulWidget {
   final int staffId;

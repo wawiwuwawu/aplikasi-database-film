@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../service/wishlist_service.dart';
-import '../service/movie_service.dart';
-import '../model/movie_model.dart';
+import '../../service/wishlist_service.dart';
+import '../../service/movie_service.dart';
+import '../../model/movie_model.dart';
 import 'movie_list.dart';
-import 'movie_detail.dart';
+import '../detail_screen/movie_detail.dart';
 
 class WishlistScreen extends StatefulWidget {
   const WishlistScreen({Key? key}) : super(key: key);

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:weebase/screen/main_screen.dart';
 import 'package:weebase/service/auth_service.dart';
-import 'package:weebase/screen/register_screen.dart';
+import 'package:weebase/screen/login_user/register_screen.dart';
 import 'package:weebase/service/preferences_service.dart';
 import 'package:weebase/model/user_model.dart';
-import 'package:weebase/screen/forgot_password_screen.dart';
+import 'package:weebase/screen/login_user/forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

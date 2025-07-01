@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:weebase/screen/movie_list.dart';
-import 'package:weebase/screen/profile_screen.dart';
-import 'package:weebase/screen/wishlist_screen.dart';
+import 'package:weebase/screen/main_screen/movie_list.dart';
+import 'package:weebase/screen/profile/profile_screen.dart';
+import 'package:weebase/screen/main_screen/wishlist_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

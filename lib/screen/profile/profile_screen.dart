@@ -3,8 +3,8 @@ import 'package:weebase/service/preferences_service.dart';
 import 'profile_detail_screen.dart';
 import 'about_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../model/user_model.dart';
-import 'wishlist_screen.dart';
+import '../../model/user_model.dart';
+import '../main_screen/wishlist_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
