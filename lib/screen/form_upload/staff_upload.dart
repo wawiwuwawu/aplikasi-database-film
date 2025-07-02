@@ -3,8 +3,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
 import 'dart:async';
-import '../../service/staff_service.dart';
-import '../../model/staff_model.dart';
+import 'package:weebase/service/staff_service.dart';
+import 'package:weebase/model/staff_model.dart';
 
 class AddStaffForm extends StatefulWidget {
   final Staff? staff;

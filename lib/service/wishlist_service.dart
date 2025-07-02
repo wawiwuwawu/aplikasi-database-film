@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
-import '../service/preferences_service.dart';
+import 'package:weebase/service/preferences_service.dart';
 
 class WishlistService {
   static const String baseUrl = 'https://api.wawunime.my.id/api/list/';

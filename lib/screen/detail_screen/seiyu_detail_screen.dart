@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../service/seiyu_service.dart';
-import '../../service/movie_service.dart';
-import '../../model/seiyu_model.dart';
-import '../../model/movie_model.dart' as movie_model;
+import 'package:weebase/service/seiyu_service.dart';
+import 'package:weebase/service/movie_service.dart';
+import 'package:weebase/model/seiyu_model.dart';
 import 'movie_detail.dart';
-import '../main_screen/movie_list.dart';
 
 class SeiyuDetailScreen extends StatefulWidget {
   final int seiyuId;

@@ -3,8 +3,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
 import 'dart:async';
-import '../../service/seiyu_service.dart';
-import '../../model/seiyu_model.dart';
+import 'package:weebase/service/seiyu_service.dart';
+import 'package:weebase/model/seiyu_model.dart';
 
 class AddSeiyuForm extends StatefulWidget {
   final Seiyu? seiyu;

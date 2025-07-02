@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../model/staff_model.dart';
-import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../../service/staff_service.dart';
-import '../../service/movie_service.dart';
-import '../../model/seiyu_model.dart';
-import '../../model/movie_model.dart' as movie_model;
+import 'package:weebase/model/staff_model.dart';
+import 'package:weebase/service/staff_service.dart';
+import 'package:weebase/service/movie_service.dart';
 import 'movie_detail.dart';
-import '../main_screen/movie_list.dart';
 
 class StaffDetailScreen extends StatefulWidget {
   final int staffId;
@@ -53,6 +48,13 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
           final staff = snapshot.data!;
           return _buildContent(staff);
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        },
+        tooltip: 'Kembali ke Home',
+        child: const Icon(Icons.home),
       ),
     );
   }

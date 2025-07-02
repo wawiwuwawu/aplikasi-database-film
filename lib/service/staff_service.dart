@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'dart:convert';
-import '../model/staff_model.dart';
+import 'package:weebase/model/staff_model.dart';
 import 'dart:io';
 import 'package:logger/logger.dart';
 

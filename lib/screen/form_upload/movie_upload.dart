@@ -3,15 +3,15 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:numberpicker/numberpicker.dart';
-import '../../service/karakter_service.dart';
-import '../../model/karakter_model.dart' as karakter_model;
-import '../../service/seiyu_service.dart';
-import '../../model/seiyu_model.dart' as seiyu_model;
-import '../../service/staff_service.dart';
-import '../../model/staff_model.dart' as staff_model;
-import '../../model/movie_model.dart' as movie_model;
-import '../../service/movie_service.dart';
-import '../../model/movie_model.dart';
+import 'package:weebase/service/karakter_service.dart';
+import 'package:weebase/model/karakter_model.dart' as karakter_model;
+import 'package:weebase/service/seiyu_service.dart';
+import 'package:weebase/model/seiyu_model.dart' as seiyu_model;
+import 'package:weebase/service/staff_service.dart';
+import 'package:weebase/model/staff_model.dart' as staff_model;
+import 'package:weebase/model/movie_model.dart' as movie_model;
+import 'package:weebase/service/movie_service.dart';
+import 'package:weebase/model/movie_model.dart';
 
 class MovieFormPage extends StatefulWidget {
   final Movie? movie;

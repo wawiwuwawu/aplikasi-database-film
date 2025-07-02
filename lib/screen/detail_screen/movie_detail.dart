@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../model/movie_model.dart';
+import 'package:weebase/model/movie_model.dart';
 import 'karakter_detail_screen.dart';
 import 'seiyu_detail_screen.dart';
 import 'staff_detail_screen.dart';

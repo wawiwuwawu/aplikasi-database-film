@@ -1,4 +1,3 @@
-// file: lib/screens/otp_verification_screen.dart
 import 'package:flutter/material.dart';
 import 'package:weebase/service/auth_service.dart';
 import 'package:weebase/screen/login_user/login_screen.dart';

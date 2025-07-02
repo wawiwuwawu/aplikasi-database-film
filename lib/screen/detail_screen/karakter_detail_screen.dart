@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../service/karakter_service.dart';
-import '../../service/movie_service.dart';
-import '../../model/karakter_model.dart';
+import 'package:weebase/service/karakter_service.dart';
+import 'package:weebase/service/movie_service.dart';
+import 'package:weebase/model/karakter_model.dart';
 import 'movie_detail.dart';
 
 class CharacterDetailScreen extends StatefulWidget {

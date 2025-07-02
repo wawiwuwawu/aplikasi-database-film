@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:async';
-import '../../service/karakter_service.dart';
-import '../../model/karakter_model.dart';
+import 'package:weebase/service/karakter_service.dart';
+import 'package:weebase/model/karakter_model.dart';
 
 
 class AddCharacterForm extends StatefulWidget {

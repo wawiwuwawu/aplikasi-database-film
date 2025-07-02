@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../model/user_model.dart';
-import '../../service/auth_service.dart';
+import 'package:weebase/model/user_model.dart';
+import 'package:weebase/service/auth_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final User user;
