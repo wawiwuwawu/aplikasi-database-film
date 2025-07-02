@@ -73,4 +73,31 @@ class WishlistService {
     }
     return;
   }
+
+  Future<void> deleteUserMovie({required int movieId}) async {
+    final user = PreferencesService.getCredentials();
+    if (user == null) throw Exception('User not logged in');
+    final userId = user.id;
+    final url = Uri.parse('https://api.wawunime.my.id/api/list/$userId/$movieId');
+    final response = await http.delete(
+      url,
+      headers: {'Accept': 'application/json'},
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      _logger.e('DEBUG response.body: ' + response.body);
+      String msg = 'Gagal menghapus movie dari list';
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map && decoded['message'] != null) {
+          msg = decoded['message'].toString();
+        } else if (decoded is String) {
+          msg = decoded;
+        }
+      } catch (_) {
+        msg = response.body;
+      }
+      throw Exception(msg);
+    }
+    return;
+  }
 }

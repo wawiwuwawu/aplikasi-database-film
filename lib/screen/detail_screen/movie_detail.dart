@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:weebase/model/movie_model.dart';
+import 'package:weebase/service/wishlist_service.dart';
+import 'package:weebase/service/preferences_service.dart';
 import 'karakter_detail_screen.dart';
 import 'seiyu_detail_screen.dart';
 import 'staff_detail_screen.dart';
@@ -58,76 +60,118 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
           },
         ),
       ),
-      body: _serverOffline
-          ? RefreshIndicator(
-              onRefresh: () async {
-                setState(() {
-                  _movieFuture = _loadMovie(fromRefresh: true);
-                });
-                await _movieFuture;
-              },
-              child: ListView(
-                children: [
-                  SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.7,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.cloud_off, size: 48, color: Colors.grey),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Server offline\nTarik ke bawah untuk mencoba lagi',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+      body: Stack(
+        children: [
+          _serverOffline
+              ? RefreshIndicator(
+                  onRefresh: () async {
+                    setState(() {
+                      _movieFuture = _loadMovie(fromRefresh: true);
+                    });
+                    await _movieFuture;
+                  },
+                  child: ListView(
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.7,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.cloud_off, size: 48, color: Colors.grey),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Server offline\nTarik ke bawah untuk mencoba lagi',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            )
-          : RefreshIndicator(
-              onRefresh: () async {
-                setState(() {
-                  _movieFuture = _loadMovie(fromRefresh: true);
-                });
-                await _movieFuture;
-              },
-              child: FutureBuilder<Movie>(
-                future: _movieFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: \n${snapshot.error}'));
-                  }
-                  final movie = snapshot.data!;
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildCoverImage(movie.coverUrl),
-                        const SizedBox(height: 20),
-                        _buildBasicInfoSection(movie),
-                        _buildSectionDivider(),
-                        _buildListSection('Genres', movie.genres, (g) => g.nama),
-                        _buildListSection('Themes', movie.themes, (t) => t.nama),
-                        _buildSectionDivider(),
-                        _buildStaffSection(movie.staffs),
-                        _buildSectionDivider(),
-                        _buildSeiyuSection(movie.seiyus, movie.karakters),
-                        _buildSectionDivider(),
-                        _buildCharacterSection(movie.karakters),
+                )
+              : RefreshIndicator(
+                  onRefresh: () async {
+                    setState(() {
+                      _movieFuture = _loadMovie(fromRefresh: true);
+                    });
+                    await _movieFuture;
+                  },
+                  child: FutureBuilder<Movie>(
+                    future: _movieFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: \n${snapshot.error}'));
+                      }
+                      final movie = snapshot.data!;
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildCoverImage(movie.coverUrl),
+                            const SizedBox(height: 16),
+                            // SaveButton dipindahkan ke atas tombol home (FAB)
+                            const SizedBox(height: 60), // Beri ruang untuk FAB
+                            _buildBasicInfoSection(movie),
+                            _buildSectionDivider(),
+                            _buildListSection('Genres', movie.genres, (g) => g.nama),
+                            _buildListSection('Themes', movie.themes, (t) => t.nama),
+                            _buildSectionDivider(),
+                            _buildStaffSection(movie.staffs),
+                            _buildSectionDivider(),
+                            _buildSeiyuSection(movie.seiyus, movie.karakters),
+                            _buildSectionDivider(),
+                            _buildCharacterSection(movie.karakters),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+          // SaveButton di atas FAB, posisinya absolute di kanan bawah, sedikit di atas FAB
+          Positioned(
+            right: 16,
+            bottom: 88, // 16 (padding) + 56 (FAB height) + 16 (jarak)
+            child: Builder(
+              builder: (context) {
+                final fabShape = Theme.of(context).floatingActionButtonTheme.shape ?? const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16)));
+                final purpleColor = const Color.fromARGB(255, 255, 255, 255);
+                return Material(
+                  elevation: 6,
+                  shape: fabShape,
+                  color: purpleColor,
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    alignment: Alignment.center,
+                    decoration: ShapeDecoration(
+                      color: purpleColor,
+                      shape: fabShape,
+                      shadows: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.18),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
                       ],
                     ),
-                  );
-                },
-              ),
+                    child: SaveButton(
+                      movie: movie,
+                      iconSize: 32,
+                    ),
+                  ),
+                );
+              },
             ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.of(context).popUntil((route) => route.isFirst);
@@ -395,5 +439,156 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
           fontWeight: FontWeight.bold,
           color: Colors.blue,
         );
+  }
+}
+
+class SaveButton extends StatefulWidget {
+  final Movie movie;
+  final double iconSize;
+  final String? initialStatus;
+  final void Function(String)? onStatusChanged;
+  const SaveButton({required this.movie, this.iconSize = 24, this.initialStatus, this.onStatusChanged, super.key});
+
+  @override
+  State<SaveButton> createState() => SaveButtonState();
+}
+
+class SaveButtonState extends State<SaveButton> {
+  String? _status;
+  bool _isLoading = false;
+  final List<Map<String, dynamic>> _statusOptions = [
+    {'label': 'Disimpan', 'value': 'disimpan', 'icon': Icons.bookmark},
+    {'label': 'Ditonton', 'value': 'ditonton', 'icon': Icons.play_circle},
+    {'label': 'Sudah Ditonton', 'value': 'sudah ditonton', 'icon': Icons.check_circle},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _status = widget.initialStatus;
+    _loadCurrentStatus();
+  }
+
+  @override
+  void didUpdateWidget(covariant SaveButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialStatus != oldWidget.initialStatus) {
+      setState(() {
+        _status = widget.initialStatus;
+      });
+    }
+  }
+
+  Future<void> _loadCurrentStatus() async {
+    try {
+      final wishlist = await WishlistService().fetchWishlist();
+      final userMovie = wishlist.firstWhere(
+        (item) => item['movie_id'] == widget.movie.id,
+        orElse: () => <String, dynamic>{},
+      );
+      if (userMovie.isNotEmpty && userMovie['status'] != null) {
+        setState(() {
+          _status = userMovie['status'] as String;
+        });
+      }
+    } catch (e) {
+      // Ignore error, keep current status
+    }
+  }
+
+  Future<void> _saveStatus(String value) async {
+    final user = PreferencesService.getCredentials();
+    if (user == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Anda harus login untuk menyimpan status.')),
+        );
+      }
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await WishlistService().saveUserMovieStatus(
+        movieId: widget.movie.id,
+        status: value,
+      );
+      if (!mounted) return;
+      setState(() {
+        _status = value;
+      });
+      if (widget.onStatusChanged != null) {
+        widget.onStatusChanged!(value);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Status film: ${_statusLabel(value)}'),
+          backgroundColor: Colors.green,
+          duration: const Duration(milliseconds: 1200),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menyimpan status: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(milliseconds: 1800),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    IconData icon;
+    Color color;
+    switch (_status) {
+      case 'disimpan':
+        icon = Icons.bookmark;
+        color = Colors.blueAccent;
+        break;
+      case 'ditonton':
+        icon = Icons.play_circle;
+        color = Colors.orange;
+        break;
+      case 'sudah ditonton':
+        icon = Icons.check_circle;
+        color = Colors.green;
+        break;
+      default:
+        icon = Icons.bookmark_border;
+        color = Colors.grey;
+    }
+    return _isLoading
+        ? SizedBox(
+            width: widget.iconSize,
+            height: widget.iconSize,
+            child: const CircularProgressIndicator(strokeWidth: 2),
+          )
+        : PopupMenuButton<String>(
+            icon: Icon(icon, color: color, size: widget.iconSize),
+            tooltip: 'Setel status film',
+            constraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+            padding: EdgeInsets.zero,
+            onSelected: (value) {
+              _saveStatus(value);
+            },
+            itemBuilder: (context) => _statusOptions.map((item) => PopupMenuItem<String>(
+              value: item['value'] as String,
+              child: Row(
+                children: [
+                  Icon(item['icon'] as IconData, color: _status == item['value'] ? Theme.of(context).colorScheme.primary : Colors.grey, size: 20),
+                  const SizedBox(width: 8),
+                  Text(item['label'] as String),
+                ],
+              ),
+            )).toList(),
+          );
+  }
+
+  String _statusLabel(String value) {
+    return _statusOptions.firstWhere((item) => item['value'] == value)['label'] as String;
   }
 }

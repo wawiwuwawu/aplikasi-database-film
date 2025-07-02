@@ -69,15 +69,15 @@ class Movie {
 
   factory Movie.fromJson(Map<String, dynamic> json) {
     return Movie(
-      id: json['id'],
-      judul: json['judul'],
-      sinopsis: json['sinopsis'],
-      tahunRilis: json['tahun_rilis'],
-      type: json['type'],
-      episode: json['episode'],
-      durasi: json['durasi'],
-      rating: json['rating'],
-      coverUrl: json['cover_url'],
+      id: json['id'] ?? 0,
+      judul: json['judul'] ?? '',
+      sinopsis: json['sinopsis'] ?? '',
+      tahunRilis: json['tahun_rilis'] ?? 0,
+      type: json['type'] ?? '',
+      episode: json['episode'] ?? 0,
+      durasi: json['durasi'] ?? 0,
+      rating: json['rating'] ?? '',
+      coverUrl: json['cover_url'] ?? '',
       genres:
           (json['genres'] as List<dynamic>?)
               ?.map((e) => Genre.fromJson(e))
