@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:weebase/screen/profile/edit_profile_screen.dart';
 import '../login_user/forgot_password_screen.dart';
-import 'package:weebase/service/auth_service.dart';
+import 'package:weebase/screen/login_user/reset_password_screen.dart';
+import '../../service/auth_service.dart';
 import '../../model/user_model.dart';
 
 class ProfileDetailScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
   bool _isLoading = true;
   String? _error;
   bool isEditing = false;
+  bool _isSendingOtp = false;
 
   @override
   void initState() {
@@ -149,24 +151,52 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
               decoration: const InputDecoration(labelText: 'Password'),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ForgotPasswordScreen(),
-                  ),
-                );
-              },
+              onPressed: _isSendingOtp
+                  ? null
+                  : () async {
+                      setState(() => _isSendingOtp = true);
+                      try {
+                        final email = _user?.email;
+                        if (email == null || email.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Email user tidak tersedia')),
+                          );
+                          setState(() => _isSendingOtp = false);
+                          return;
+                        }
+                        // Kirim OTP ke email user
+                        await AuthService().resendOtp(email);
+                        // Navigasi ke halaman reset password
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ResetPasswordScreen(email: email),
+                          ),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Gagal mengirim OTP: $e')),
+                        );
+                      } finally {
+                        setState(() => _isSendingOtp = false);
+                      }
+                    },
               style: ButtonStyle(
                 padding: MaterialStateProperty.all<EdgeInsets>(EdgeInsets.zero),
               ),
-              child: const Text(
-                'Lupa Password?',
-                style: TextStyle(
-                  color: Colors.blue,
-                  fontWeight: FontWeight.w300,
-                ),
-              ),
+              child: _isSendingOtp
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text(
+                      'Edit Password',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w300,
+                      ),
+                    ),
             ),
             if (_user?.createdAt != null)
               Text(

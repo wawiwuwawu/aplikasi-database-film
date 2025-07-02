@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'upload/staff_upload.dart';
-import 'upload/seiyu_upload.dart';
-import 'upload/karakter_upload.dart';
-import 'upload/movie_upload.dart';
+import 'form_upload/staff_upload.dart';
+import 'form_upload/seiyu_upload.dart';
+import 'upload_list/karakter_upload_list.dart';
+import 'form_upload/movie_upload.dart';
 
 class AdminMenuPage extends StatelessWidget {
   const AdminMenuPage({super.key});
@@ -30,9 +30,9 @@ class AdminMenuPage extends StatelessWidget {
       ),
       _MenuItem(
         icon: Icons.person,
-        title: 'Tambah Karakter',
+        title: 'Kelola Karakter',
         color: Colors.purple,
-        destination: const AddCharacterForm(),
+        destination: const KarakterUploadListScreen(),
       ),
     ];
 

@@ -179,5 +179,25 @@ class KarakterService {
     }
   }
 
+  Future<List<Karakter>> getAllKarakter() async {
+    final uri = Uri.parse(_baseUrl);
+    final response = await http.get(
+      uri,
+      headers: {'Accept': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      if (jsonData['data'] is List) {
+        return (jsonData['data'] as List)
+            .map((karakterJson) => Karakter.fromJson(karakterJson))
+            .toList();
+      } else {
+        throw Exception('Invalid API response structure');
+      }
+    } else {
+      throw Exception('Failed to load karakter: ${response.statusCode} - ${response.body}');
+    }
+  }
+
 }
 
