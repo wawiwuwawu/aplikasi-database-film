@@ -7,7 +7,8 @@ import '../../service/seiyu_service.dart';
 import '../../model/seiyu_model.dart';
 
 class AddSeiyuForm extends StatefulWidget {
-  const AddSeiyuForm({super.key});
+  final Seiyu? seiyu;
+  const AddSeiyuForm({Key? key, this.seiyu}) : super(key: key);
 
   @override
   _AddSeiyuFormState createState() => _AddSeiyuFormState();
@@ -31,7 +32,6 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
   final _youtubeController = TextEditingController();
   final _searchController = TextEditingController();
 
-  // Ganti _coverImage dengan dua variabel: file lokal dan url
   File? _coverImageFile;
   String? _coverImageUrl;
   bool _isLoading = false;
@@ -39,6 +39,14 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
   final List<Seiyu> _searchResults = [];
   Seiyu? _selectedSeiyu;
   Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.seiyu != null) {
+      _selectSeiyu(widget.seiyu!);
+    }
+  }
 
   @override
   void dispose() {
@@ -64,36 +72,36 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
     }
   }
 
-  Future<void> _searchSeiyu() async {
-    if (_searchController.text.isEmpty) {
-      setState(() => _errorMessage = 'Nama seiyu tidak boleh kosong');
-      return;
-    }
+  // Future<void> _searchSeiyu() async {
+  //   if (_searchController.text.isEmpty) {
+  //     setState(() => _errorMessage = 'Nama seiyu tidak boleh kosong');
+  //     return;
+  //   }
 
-    setState(() {
-      _isLoading = true;
-      _searchResults.clear();
-    });
+  //   setState(() {
+  //     _isLoading = true;
+  //     _searchResults.clear();
+  //   });
 
-    try {
-      final results = await _apiService.searchSeiyuByName(
-        _searchController.text,
-      );
+  //   try {
+  //     final results = await _apiService.searchSeiyuByName(
+  //       _searchController.text,
+  //     );
 
-      if (results.isEmpty) {
-        // Tidak set errorMessage, biar hanya snackbar yang muncul
-        return;
-      }
+  //     if (results.isEmpty) {
+  //       // Tidak set errorMessage, biar hanya snackbar yang muncul
+  //       return;
+  //     }
 
-      setState(() {
-        _searchResults.addAll(results);
-      });
-    } catch (e) {
-      // Tidak set errorMessage, biar hanya snackbar yang muncul
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
+  //     setState(() {
+  //       _searchResults.addAll(results);
+  //     });
+  //   } catch (e) {
+  //     // Tidak set errorMessage, biar hanya snackbar yang muncul
+  //   } finally {
+  //     setState(() => _isLoading = false);
+  //   }
+  // }
 
   void _selectSeiyu(Seiyu seiyu) {
     if (seiyu.name.isEmpty) {
@@ -295,94 +303,74 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
     });
   }
 
-  Widget _buildSearchField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  labelText: 'Cari Seiyu (untuk edit)',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon:
-                      _searchController.text.isNotEmpty
-                          ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              setState(() {
-                                _searchController.clear();
-                                _searchResults.clear();
-                                _errorMessage = null;
-                              });
-                            },
-                          )
-                          : null,
-                ),
-                onChanged: (value) {
-                  if (_debounce?.isActive ?? false) _debounce!.cancel();
-                  setState(() {}); // Untuk update suffixIcon
-                  if (value.isEmpty) {
-                    setState(() {
-                      _searchResults.clear();
-                      _errorMessage = null;
-                    });
-                    return;
-                  }
-                  _debounce = Timer(const Duration(milliseconds: 1000), () {
-                    if (value.isNotEmpty) {
-                      _searchSeiyu();
-                    }
-                  });
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _searchSeiyu,
-              child:
-                  _isLoading
-                      ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                      : const Text('Cari'),
-            ),
-          ],
-        ),
-        _buildSearchResults(),
-      ],
-    );
-  }
+  // Widget _buildSearchField() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Row(
+  //         children: [
+  //           Expanded(
+  //             child: TextFormField(
+  //               controller: _searchController,
+  //               decoration: InputDecoration(
+  //                 labelText: 'Cari Seiyu (untuk edit)',
+  //                 border: const OutlineInputBorder(),
+  //                 prefixIcon: const Icon(Icons.search),
+  //                 suffixIcon:
+  //                     _searchController.text.isNotEmpty
+  //                         ? IconButton(
+  //                             icon: const Icon(Icons.clear),
+  //                             onPressed: () {
+  //                               setState(() {
+  //                                 _searchController.clear();
+  //                                 _searchResults.clear();
+  //                                 _errorMessage = null;
+  //                               });
+  //                             },
+  //                           )
+  //                         : null,
+  //               ),
+  //               onChanged: (value) {
+  //                 if (_debounce?.isActive ?? false) _debounce!.cancel();
+  //                 setState(() {}); // Untuk update suffixIcon
+  //                 if (value.isEmpty) {
+  //                   setState(() {
+  //                     _searchResults.clear();
+  //                     _errorMessage = null;
+  //                   });
+  //                   return;
+  //                 }
+  //                 _debounce = Timer(const Duration(milliseconds: 1000), () {
+  //                   if (value.isNotEmpty) {
+  //                     _searchSeiyu();
+  //                   }
+  //                 });
+  //               },
+  //             ),
+  //           ),
+  //           const SizedBox(width: 8),
+  //           ElevatedButton(
+  //             onPressed: _isLoading ? null : _searchSeiyu,
+  //             child:
+  //                 _isLoading
+  //                     ? const SizedBox(
+  //                         width: 20,
+  //                         height: 20,
+  //                         child: CircularProgressIndicator(
+  //                           strokeWidth: 2,
+  //                           color: Colors.white,
+  //                         ),
+  //                       )
+  //                     : const Text('Cari'),
+  //           ),
+  //         ],
+  //       ),
+  //       _buildSearchResults(),
+  //     ],
+  //   );
+  // }
 
   Widget _buildSearchResults() {
-    // Tampilkan snackbar error hanya jika pencarian sudah selesai dan user tidak sedang mengetik
-    if (_searchController.text.isNotEmpty &&
-        !_isLoading &&
-        _searchResults.isEmpty &&
-        (_debounce == null || !_debounce!.isActive)) {
-      // WidgetsBinding.instance.addPostFrameCallback((_) {
-      //   if (mounted) {
-      //     ScaffoldMessenger.of(context).removeCurrentSnackBar();
-      //     ScaffoldMessenger.of(context).showSnackBar(
-      //       const SnackBar(
-      //         content: Text('Seiyu tidak ditemukan'),
-      //         backgroundColor: Colors.red,
-      //         duration: Duration(seconds: 2),
-      //         behavior: SnackBarBehavior.floating,
-      //         margin: EdgeInsets.only(bottom: 80, left: 16, right: 16),
-      //       ),
-      //     );
-      //   }
-      // });
-    }
     if (_searchResults.isEmpty) return const SizedBox();
 
     return Container(
@@ -401,17 +389,17 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
             leading:
                 seiyu.profileUrl != null && seiyu.profileUrl!.isNotEmpty
                     ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        seiyu.profileUrl!,
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                        errorBuilder:
-                            (context, error, stackTrace) =>
-                                const Icon(Icons.error, size: 50),
-                      ),
-                    )
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          seiyu.profileUrl!,
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                          errorBuilder:
+                              (context, error, stackTrace) =>
+                                  const Icon(Icons.error, size: 50),
+                        ),
+                      )
                     : const Icon(Icons.person, size: 50),
             title: Text(seiyu.name),
             subtitle: Text(seiyu.bio ?? 'Tidak ada bio'),
@@ -539,21 +527,18 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tambah Seiyu'),
+        title: Text(_selectedSeiyu != null ? 'Edit Seiyu' : 'Tambah Seiyu'),
         actions: [
           if (_selectedSeiyu != null)
-            ElevatedButton(
-              onPressed: _resetForm,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+            Padding(
+              padding: const EdgeInsets.only(right: 10.0),
+              child: ElevatedButton(
+                onPressed: _resetForm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
                 ),
-              ),
-              child: const Text(
-                'Batal Update',
-                style: TextStyle(color: Colors.white),
+                child: const Text('Batal Edit'),
               ),
             ),
         ],
@@ -577,10 +562,10 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
                     border: Border.all(color: Colors.blue, width: 1.5),
                   ),
                   child: Row(
-                    children: [
-                      const Icon(Icons.edit, color: Colors.blue),
-                      const SizedBox(width: 8),
-                      const Text(
+                    children: const [
+                      Icon(Icons.edit, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Text(
                         'Mode Edit Seiyu',
                         style: TextStyle(
                           color: Colors.blue,
@@ -606,7 +591,8 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
                   ),
                 ),
               if (_errorMessage != null) const SizedBox(height: 16),
-              _buildSearchField(),
+              // _buildSearchField(),
+              const SizedBox(height: 16),
               _buildIdField(),
               _buildFormField(
                 label: 'Nama',
@@ -615,40 +601,35 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
                 key: _nameFieldKey,
               ),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: TextFormField(
+                    child: _buildFormField(
+                      label: 'Ulang Tahun',
                       controller: _birthdateController,
                       readOnly: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Ulang Tahun',
-                        border: OutlineInputBorder(),
-                      ),
-                      onTap: _pickDate,
+                      onTap: _pickDate
                     ),
                   ),
                   const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _birthdateController.clear();
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _birthdateController.clear();
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(60, 58)
                       ),
-                    ),
-                    child: const Text(
-                      'Hapus',
-                      style: TextStyle(color: Colors.white),
+                      child: const Icon(Icons.clear),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
               _buildFormField(
                 label: 'Bio',
                 controller: _bioController,
@@ -683,8 +664,8 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
                     _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : Icon(
-                          _selectedSeiyu != null ? Icons.update : Icons.upload,
-                        ),
+                            _selectedSeiyu != null ? Icons.update : Icons.upload,
+                          ),
                 label: Text(
                   _isLoading
                       ? 'Proses...'
@@ -705,6 +686,7 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
                   onPressed: _isLoading ? null : _showDeleteConfirmationDialog,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 50),
                   ),
                 ),
@@ -748,7 +730,7 @@ class _AddSeiyuFormState extends State<AddSeiyuForm> {
         pattern = RegExp(
           r'^https?:\/\/(www\.)?(youtube\.com\/(channel\/|c\/|user\/|@)|youtu\.be\/)[a-zA-Z0-9_-]+(\/?)$',
         );
-        example = 'https://youtube.com/@username';
+        example = 'https://youtube.com/@channel';
         break;
       default:
         return null;

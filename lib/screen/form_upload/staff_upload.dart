@@ -7,7 +7,8 @@ import '../../service/staff_service.dart';
 import '../../model/staff_model.dart';
 
 class AddStaffForm extends StatefulWidget {
-  const AddStaffForm({super.key});
+  final Staff? staff;
+  const AddStaffForm({Key? key, this.staff}) : super(key: key);
 
   @override
   _AddStaffFormState createState() => _AddStaffFormState();
@@ -38,6 +39,14 @@ class _AddStaffFormState extends State<AddStaffForm> {
   Timer? _debounce;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.staff != null) {
+      _selectStaff(widget.staff!);
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _birthdateController.dispose();
@@ -57,36 +66,36 @@ class _AddStaffFormState extends State<AddStaffForm> {
     }
   }
 
-  Future<void> _searchStaff() async {
-    if (_searchController.text.isEmpty) {
-      setState(() => _errorMessage = 'Nama staff tidak boleh kosong');
-      return;
-    }
+  // Future<void> _searchStaff() async {
+  //   if (_searchController.text.isEmpty) {
+  //     setState(() => _errorMessage = 'Nama staff tidak boleh kosong');
+  //     return;
+  //   }
 
-    setState(() {
-      _isLoading = true;
-      _searchResults.clear();
-    });
+  //   setState(() {
+  //     _isLoading = true;
+  //     _searchResults.clear();
+  //   });
 
-    try {
-      final results = await _apiService.searchStaffByName(
-        _searchController.text,
-      );
+  //   try {
+  //     final results = await _apiService.searchStaffByName(
+  //       _searchController.text,
+  //     );
 
-      if (results.isEmpty) {
-        // Tidak set errorMessage, biar hanya snackbar yang muncul
-        return;
-      }
+  //     if (results.isEmpty) {
+  //       // Tidak set errorMessage, biar hanya snackbar yang muncul
+  //       return;
+  //     }
 
-      setState(() {
-        _searchResults.addAll(results);
-      });
-    } catch (e) {
-      // Tidak set errorMessage, biar hanya snackbar yang muncul
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
+  //     setState(() {
+  //       _searchResults.addAll(results);
+  //     });
+  //   } catch (e) {
+  //     // Tidak set errorMessage, biar hanya snackbar yang muncul
+  //   } finally {
+  //     setState(() => _isLoading = false);
+  //   }
+  // }
 
   void _selectStaff(Staff staff) {
     if (staff.name.isEmpty) {
@@ -279,134 +288,134 @@ class _AddStaffFormState extends State<AddStaffForm> {
     });
   }
 
-  Widget _buildSearchField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  labelText: 'Cari Staff (untuk edit)',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon:
-                      _searchController.text.isNotEmpty
-                          ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              setState(() {
-                                _searchController.clear();
-                                _searchResults.clear();
-                                _errorMessage = null;
-                              });
-                            },
-                          )
-                          : null,
-                ),
-                onChanged: (value) {
-                  if (_debounce?.isActive ?? false) _debounce!.cancel();
-                  setState(() {}); // Untuk update suffixIcon
-                  if (value.isEmpty) {
-                    setState(() {
-                      _searchResults.clear();
-                      _errorMessage = null;
-                    });
-                    return;
-                  }
-                  _debounce = Timer(const Duration(milliseconds: 1000), () {
-                    if (value.isNotEmpty) {
-                      _searchStaff();
-                    }
-                  });
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _searchStaff,
-              child:
-                  _isLoading
-                      ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                      : const Text('Cari'),
-            ),
-          ],
-        ),
-        _buildSearchResults(),
-      ],
-    );
-  }
+  // Widget _buildSearchField() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Row(
+  //         children: [
+  //           Expanded(
+  //             child: TextFormField(
+  //               controller: _searchController,
+  //               decoration: InputDecoration(
+  //                 labelText: 'Cari Staff (untuk edit)',
+  //                 border: const OutlineInputBorder(),
+  //                 prefixIcon: const Icon(Icons.search),
+  //                 suffixIcon:
+  //                     _searchController.text.isNotEmpty
+  //                         ? IconButton(
+  //                           icon: const Icon(Icons.clear),
+  //                           onPressed: () {
+  //                             setState(() {
+  //                               _searchController.clear();
+  //                               _searchResults.clear();
+  //                               _errorMessage = null;
+  //                             });
+  //                           },
+  //                         )
+  //                         : null,
+  //               ),
+  //               onChanged: (value) {
+  //                 if (_debounce?.isActive ?? false) _debounce!.cancel();
+  //                 setState(() {}); // Untuk update suffixIcon
+  //                 if (value.isEmpty) {
+  //                   setState(() {
+  //                     _searchResults.clear();
+  //                     _errorMessage = null;
+  //                   });
+  //                   return;
+  //                 }
+  //                 _debounce = Timer(const Duration(milliseconds: 1000), () {
+  //                   if (value.isNotEmpty) {
+  //                     _searchStaff();
+  //                   }
+  //                 });
+  //               },
+  //             ),
+  //           ),
+  //           const SizedBox(width: 8),
+  //           ElevatedButton(
+  //             onPressed: _isLoading ? null : _searchStaff,
+  //             child:
+  //                 _isLoading
+  //                     ? const SizedBox(
+  //                       width: 20,
+  //                       height: 20,
+  //                       child: CircularProgressIndicator(
+  //                         strokeWidth: 2,
+  //                         color: Colors.white,
+  //                       ),
+  //                     )
+  //                     : const Text('Cari'),
+  //           ),
+  //         ],
+  //       ),
+  //       _buildSearchResults(),
+  //     ],
+  //   );
+  // }
 
-  Widget _buildSearchResults() {
-    // Tampilkan snackbar error hanya jika pencarian sudah selesai dan user tidak sedang mengetik
-    if (_searchController.text.isNotEmpty &&
-        !_isLoading &&
-        _searchResults.isEmpty &&
-        (_debounce == null || !_debounce!.isActive)) {
-      // WidgetsBinding.instance.addPostFrameCallback((_) {
-      //   if (mounted) {
-      //     ScaffoldMessenger.of(context).removeCurrentSnackBar();
-      //     ScaffoldMessenger.of(context).showSnackBar(
-      //       const SnackBar(
-      //         content: Text('Staff tidak ditemukan'),
-      //         backgroundColor: Colors.red,
-      //         duration: Duration(seconds: 2),
-      //         behavior: SnackBarBehavior.floating,
-      //         margin: EdgeInsets.only(bottom: 80, left: 16, right: 16),
-      //       ),
-      //     );
-      //   }
-      // });
-    }
-    if (_searchResults.isEmpty) return const SizedBox();
+  // Widget _buildSearchResults() {
+  //   // Tampilkan snackbar error hanya jika pencarian sudah selesai dan user tidak sedang mengetik
+  //   if (_searchController.text.isNotEmpty &&
+  //       !_isLoading &&
+  //       _searchResults.isEmpty &&
+  //       (_debounce == null || !_debounce!.isActive)) {
+  //     // WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     //   if (mounted) {
+  //     //     ScaffoldMessenger.of(context).removeCurrentSnackBar();
+  //     //     ScaffoldMessenger.of(context).showSnackBar(
+  //     //       const SnackBar(
+  //     //         content: Text('Staff tidak ditemukan'),
+  //     //         backgroundColor: Colors.red,
+  //     //         duration: Duration(seconds: 2),
+  //     //         behavior: SnackBarBehavior.floating,
+  //     //         margin: EdgeInsets.only(bottom: 80, left: 16, right: 16),
+  //     //       ),
+  //     //     );
+  //     //   }
+  //     // });
+  //   }
+  //   if (_searchResults.isEmpty) return const SizedBox();
 
-    return Container(
-      constraints: const BoxConstraints(maxHeight: 200),
-      margin: const EdgeInsets.only(top: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ListView.builder(
-        itemCount: _searchResults.length,
-        itemBuilder: (context, index) {
-          final staff = _searchResults[index];
-          return ListTile(
-            leading:
-                staff.profileUrl != null && staff.profileUrl!.isNotEmpty
-                    ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        staff.profileUrl!,
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                        errorBuilder:
-                            (context, error, stackTrace) =>
-                                const Icon(Icons.error, size: 50),
-                      ),
-                    )
-                    : const Icon(Icons.person, size: 50),
-            title: Text(staff.name),
-            subtitle: Text(staff.bio ?? 'Tidak ada bio'),
-            onTap: () {
-              _selectStaff(staff);
-            },
-          );
-        },
-      ),
-    );
-  }
+  //   return Container(
+  //     constraints: const BoxConstraints(maxHeight: 200),
+  //     margin: const EdgeInsets.only(top: 8),
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       border: Border.all(color: Colors.grey),
+  //       borderRadius: BorderRadius.circular(8),
+  //     ),
+  //     child: ListView.builder(
+  //       itemCount: _searchResults.length,
+  //       itemBuilder: (context, index) {
+  //         final staff = _searchResults[index];
+  //         return ListTile(
+  //           leading:
+  //               staff.profileUrl != null && staff.profileUrl!.isNotEmpty
+  //                   ? ClipRRect(
+  //                     borderRadius: BorderRadius.circular(8),
+  //                     child: Image.network(
+  //                       staff.profileUrl!,
+  //                       width: 50,
+  //                       height: 50,
+  //                       fit: BoxFit.cover,
+  //                       errorBuilder:
+  //                           (context, error, stackTrace) =>
+  //                               const Icon(Icons.error, size: 50),
+  //                     ),
+  //                   )
+  //                   : const Icon(Icons.person, size: 50),
+  //           title: Text(staff.name),
+  //           subtitle: Text(staff.bio ?? 'Tidak ada bio'),
+  //           onTap: () {
+  //             _selectStaff(staff);
+  //           },
+  //         );
+  //       },
+  //     ),
+  //   );
+  // }
 
   Widget _buildFormField({
     required String label,
@@ -590,7 +599,7 @@ class _AddStaffFormState extends State<AddStaffForm> {
                   ),
                 ),
               if (_errorMessage != null) const SizedBox(height: 16),
-              _buildSearchField(),
+              // _buildSearchField(),
               _buildIdField(),
               _buildFormField(
                 label: 'Nama',

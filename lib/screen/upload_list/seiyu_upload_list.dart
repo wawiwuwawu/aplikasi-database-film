@@ -1,18 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:weebase/model/karakter_model.dart';
-import 'package:weebase/service/karakter_service.dart';
-import 'package:weebase/screen/form_upload/karakter_upload.dart';
+import 'package:weebase/model/seiyu_model.dart';
+import 'package:weebase/service/seiyu_service.dart';
+import 'package:weebase/screen/form_upload/seiyu_upload.dart';
 
-class KarakterUploadListScreen extends StatefulWidget {
-  const KarakterUploadListScreen({super.key});
+class SeiyuUploadListScreen extends StatefulWidget {
+  const SeiyuUploadListScreen({super.key});
 
   @override
-  State<KarakterUploadListScreen> createState() => _KarakterUploadListScreenState();
+  State<SeiyuUploadListScreen> createState() => _seiyuUploadListScreenState();
 }
 
-class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
-  List<Karakter> _karakterList = [];
+class _seiyuUploadListScreenState extends State<SeiyuUploadListScreen> {
+  List<Seiyu> _seiyuList = [];
   bool _isLoading = false;
   String? _error;
   int _currentPage = 1;
@@ -44,7 +44,7 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
   // Fungsi untuk mereset daftar dan memulai pencarian/refresh baru
   void _resetAndFetch() {
     setState(() {
-      _karakterList.clear();
+      _seiyuList.clear();
       _currentPage = 1;
       _hasMore = true;
       _error = null;
@@ -64,19 +64,19 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
 
     try {
       // Variabel untuk menampung hasil dari API
-      late final List<Karakter> list;
+      late final List<Seiyu> list;
 
       // Logika untuk memilih service yang akan digunakan
       if (_searchQuery.isEmpty) {
         // Jika tidak mencari, panggil service get all
-        list = await KarakterService().getAllKarakter(
+        list = await SeiyuApiService().getAllSeiyu(
           page: _currentPage,
         );
       } else {
         // Jika mencari, panggil service search dengan menyertakan halaman
-        list = await KarakterService().searchKarakterByName(
+        list = await SeiyuApiService().searchSeiyuByName(
           _searchQuery,
-          page: _currentPage, // Tambahkan parameter halaman di sini
+          page: _currentPage,
         );
       }
 
@@ -85,7 +85,7 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
         if (list.length < _perPage) {
           _hasMore = false;
         }
-        _karakterList.addAll(list);
+        _seiyuList.addAll(list);
         _isLoading = false;
         _currentPage++; // Selalu naikkan halaman setelah fetch berhasil
       });
@@ -124,7 +124,7 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Cari karakter...',
+              hintText: 'Cari seiyu...',
               border: InputBorder.none,
               prefixIcon: const Icon(Icons.search, color: Colors.grey),
               suffixIcon: _searchQuery.isNotEmpty
@@ -158,7 +158,7 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const AddCharacterForm(),
+              builder: (context) => const AddSeiyuForm(),
             ),
           );
         },
@@ -169,7 +169,7 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
   }
 
   Widget _buildBody() {
-    if (_karakterList.isEmpty && _isLoading) {
+    if (_seiyuList.isEmpty && _isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -192,7 +192,7 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
       );
     }
 
-    if (_karakterList.isEmpty && !_isLoading) {
+    if (_seiyuList.isEmpty && !_isLoading) {
       return Center(
         child: Text(_error != null ? 'Error: $_error' : 'Tidak ada karakter ditemukan.'),
       );
@@ -207,26 +207,26 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: _karakterList.length + (_hasMore ? 1 : 0),
+        itemCount: _seiyuList.length + (_hasMore ? 1 : 0),
         itemBuilder: (context, i) {
-          if (i == _karakterList.length) {
+          if (i == _seiyuList.length) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Center(child: CircularProgressIndicator()),
             );
           }
-          final karakter = _karakterList[i];
+          final seiyu = _seiyuList[i];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Card(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 2,
               child: ListTile(
-                leading: karakter.profileUrl != null && karakter.profileUrl!.isNotEmpty
+                leading: seiyu.profileUrl != null && seiyu.profileUrl!.isNotEmpty
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
-                          karakter.profileUrl!,
+                          seiyu.profileUrl!,
                           width: 56,
                           height: 56,
                           fit: BoxFit.cover,
@@ -234,7 +234,7 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
                         ),
                       )
                     : const Icon(Icons.person, size: 48),
-                title: Text(karakter.nama, maxLines: 1, overflow: TextOverflow.ellipsis),
+                title: Text(seiyu.name, maxLines: 1, overflow: TextOverflow.ellipsis),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
@@ -242,7 +242,7 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'ID: ${karakter.id}',
+                    'ID: ${seiyu.id}',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                 ),
@@ -250,7 +250,7 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => AddCharacterForm(karakter: karakter),
+                      builder: (context) => AddSeiyuForm(seiyu: seiyu),
                     ),
                   );
                 },

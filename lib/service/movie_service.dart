@@ -12,36 +12,67 @@ class MovieApiService {
   final Logger _logger = Logger();
 
   Future<List<Movie>> getMovies({int page = 1, String? query}) async {
-  final uri = Uri.parse(_baseUrl).replace(
-    queryParameters: {
-      'page': page.toString(),
-      if (query != null && query.isNotEmpty) 'search': query,
-    },
-  );
-
-  final response = await http.get(
-    uri,
-    headers: {
-      'Accept': 'application/json',
-    },
-  );
-
-  if (response.statusCode == 200) {
-    final jsonData = json.decode(response.body);
-    if (jsonData['data'] is List) {
-      return (jsonData['data'] as List)
-          .map((movieJson) => Movie.fromJson(movieJson))
-          .toList();
-    } else {
-      // Jika data bukan List, kembalikan list kosong
-      return [];
-    }
-  } else {
-    throw Exception(
-      'Failed to load movies: \\${response.statusCode} - \\${response.body}',
+    final uri = Uri.parse(_baseUrl).replace(
+      queryParameters: {
+        'page': page.toString(),
+        if (query != null && query.isNotEmpty) 'search': query,
+      },
     );
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      if (jsonData['data'] is List) {
+        return (jsonData['data'] as List)
+            .map((movieJson) => Movie.fromJson(movieJson))
+            .toList();
+      } else {
+        // Jika data bukan List, kembalikan list kosong
+        return [];
+      }
+    } else {
+      throw Exception(
+        'Failed to load movies: \\${response.statusCode} - \\${response.body}',
+      );
+    }
   }
-}
+
+  // Future<List<Movie>> getAllMovieDetail({int page = 1, String? query}) async {
+  //   final uri = Uri.parse('$_baseUrl/detail').replace(
+  //     queryParameters: {
+  //       'page': page.toString(),
+  //       if (query != null && query.isNotEmpty) 'search': query,
+  //     },
+  //   );
+
+  //   final response = await http.get(
+  //     uri,
+  //     headers: {'Accept': 'application/json'},
+  //   );
+
+  //   print('MovieService.getAllMoveiDetail response: status=${response.statusCode}, body=${response.body}');
+    
+  //   if (response.statusCode == 200) {
+  //     final jsonData = json.decode(response.body);
+  //     if (jsonData['data'] is List) {
+  //       return (jsonData['data'] as List)
+  //           .map((movieJson) => Movie.fromJson(movieJson))
+  //           .toList();
+  //     } else {
+  //       print('MovieService.getAllMovieDetail: data is not List');
+  //       return [];
+  //     }
+  //   } else {
+  //     print('MovieService.getAllMovieDetail: Failed to load, status=${response.statusCode}');
+  //     throw Exception('Failed to load movie: ${response.statusCode} - ${response.body}');
+  //   }
+  // }
 
   Future<Movie> getMovieDetail(int id) async {
     final response = await http.get(Uri.parse('$_baseUrl/$id/detail'));
@@ -186,10 +217,13 @@ class MovieApiService {
     }
   }
 
-  Future<List<Movie>> searchMovies(String name) async {
-    final uri = Uri.parse(
-      '$_baseUrl/search',
-    ).replace(queryParameters: {'name': name});
+  Future<List<Movie>> searchMovies(String name, {int page = 1}) async {
+    final uri = Uri.parse('$_baseUrl/search',).replace(
+      queryParameters: {
+        'name': name,
+        'page': page.toString(),
+      },
+    );
 
     final response = await http.get(
       uri,

@@ -1,18 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:weebase/model/karakter_model.dart';
-import 'package:weebase/service/karakter_service.dart';
-import 'package:weebase/screen/form_upload/karakter_upload.dart';
+import 'package:weebase/model/staff_model.dart';
+import 'package:weebase/service/staff_service.dart';
+import 'package:weebase/screen/form_upload/staff_upload.dart';
 
-class KarakterUploadListScreen extends StatefulWidget {
-  const KarakterUploadListScreen({super.key});
+class StaffUploadListScreen extends StatefulWidget {
+  const StaffUploadListScreen({super.key});
 
   @override
-  State<KarakterUploadListScreen> createState() => _KarakterUploadListScreenState();
+  State<StaffUploadListScreen> createState() => _staffUploadListScreenState();
 }
 
-class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
-  List<Karakter> _karakterList = [];
+class _staffUploadListScreenState extends State<StaffUploadListScreen> {
+  List<Staff> _staffList = [];
   bool _isLoading = false;
   String? _error;
   int _currentPage = 1;
@@ -29,7 +29,7 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchKarakter();
+    _fetchStaff();
     _scrollController.addListener(_onScroll);
   }
 
@@ -44,17 +44,17 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
   // Fungsi untuk mereset daftar dan memulai pencarian/refresh baru
   void _resetAndFetch() {
     setState(() {
-      _karakterList.clear();
+      _staffList.clear();
       _currentPage = 1;
       _hasMore = true;
       _error = null;
       _serverOffline = false;
     });
-    _fetchKarakter();
+    _fetchStaff();
   }
 
   // --- INI FUNGSI YANG PERLU ANDA GANTI / SESUAIKAN ---
-  Future<void> _fetchKarakter() async {
+  Future<void> _fetchStaff() async {
     // Guard untuk mencegah pemanggilan ganda
     if (_isLoading || !_hasMore) return;
     
@@ -64,17 +64,17 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
 
     try {
       // Variabel untuk menampung hasil dari API
-      late final List<Karakter> list;
+      late final List<Staff> list;
 
       // Logika untuk memilih service yang akan digunakan
       if (_searchQuery.isEmpty) {
         // Jika tidak mencari, panggil service get all
-        list = await KarakterService().getAllKarakter(
+        list = await StaffService().getAllStaff(
           page: _currentPage,
         );
       } else {
         // Jika mencari, panggil service search dengan menyertakan halaman
-        list = await KarakterService().searchKarakterByName(
+        list = await StaffService().searchStaffByName(
           _searchQuery,
           page: _currentPage, // Tambahkan parameter halaman di sini
         );
@@ -85,12 +85,12 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
         if (list.length < _perPage) {
           _hasMore = false;
         }
-        _karakterList.addAll(list);
+        _staffList.addAll(list);
         _isLoading = false;
         _currentPage++; // Selalu naikkan halaman setelah fetch berhasil
       });
     } catch (e, s) {
-      print('Error fetching karakter: $e');
+      print('Error fetching staff: $e');
       print(s);
       setState(() {
         _error = e.toString();
@@ -107,7 +107,7 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
         !_isLoading &&
         _hasMore) {
-      _fetchKarakter();
+      _fetchStaff();
     }
   }
 
@@ -158,18 +158,18 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const AddCharacterForm(),
+              builder: (context) => const AddStaffForm(),
             ),
           );
         },
         child: const Icon(Icons.add),
-        tooltip: 'Tambah Karakter',
+        tooltip: 'Tambah staff',
       ),
     );
   }
 
   Widget _buildBody() {
-    if (_karakterList.isEmpty && _isLoading) {
+    if (_staffList.isEmpty && _isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -192,9 +192,9 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
       );
     }
 
-    if (_karakterList.isEmpty && !_isLoading) {
+    if (_staffList.isEmpty && !_isLoading) {
       return Center(
-        child: Text(_error != null ? 'Error: $_error' : 'Tidak ada karakter ditemukan.'),
+        child: Text(_error != null ? 'Error: $_error' : 'Tidak ada staff ditemukan.'),
       );
     }
     
@@ -207,26 +207,26 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: _karakterList.length + (_hasMore ? 1 : 0),
+        itemCount: _staffList.length + (_hasMore ? 1 : 0),
         itemBuilder: (context, i) {
-          if (i == _karakterList.length) {
+          if (i == _staffList.length) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Center(child: CircularProgressIndicator()),
             );
           }
-          final karakter = _karakterList[i];
+          final staff = _staffList[i];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Card(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 2,
               child: ListTile(
-                leading: karakter.profileUrl != null && karakter.profileUrl!.isNotEmpty
+                leading: staff.profileUrl != null && staff.profileUrl!.isNotEmpty
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
-                          karakter.profileUrl!,
+                          staff.profileUrl!,
                           width: 56,
                           height: 56,
                           fit: BoxFit.cover,
@@ -234,7 +234,7 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
                         ),
                       )
                     : const Icon(Icons.person, size: 48),
-                title: Text(karakter.nama, maxLines: 1, overflow: TextOverflow.ellipsis),
+                title: Text(staff.name, maxLines: 1, overflow: TextOverflow.ellipsis),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
@@ -242,7 +242,7 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'ID: ${karakter.id}',
+                    'ID: ${staff.id}',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                 ),
@@ -250,7 +250,7 @@ class _KarakterUploadListScreenState extends State<KarakterUploadListScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => AddCharacterForm(karakter: karakter),
+                      builder: (context) => AddStaffForm(staff: staff),
                     ),
                   );
                 },

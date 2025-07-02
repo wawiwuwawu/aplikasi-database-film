@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'form_upload/staff_upload.dart';
-import 'form_upload/seiyu_upload.dart';
-import 'upload_list/karakter_upload_list.dart';
-import 'form_upload/movie_upload.dart';
+import 'package:weebase/screen/upload_list/staff_upload_list.dart';
+import 'package:weebase/screen/upload_list/seiyu_upload_list.dart';
+import 'package:weebase/screen/upload_list/karakter_upload_list.dart';
+import 'package:weebase/screen/upload_list/movie_upload_list.dart';
 
 class AdminMenuPage extends StatelessWidget {
   const AdminMenuPage({super.key});
@@ -14,19 +14,19 @@ class AdminMenuPage extends StatelessWidget {
         icon: Icons.movie_creation,
         title: 'Tambah Movie',
         color: Colors.blue,
-        destination: const MovieFormPage(),
+        destination: const MovieUploadListScreen(),
       ),
       _MenuItem(
         icon: Icons.people,
         title: 'Tambah Staff',
         color: Colors.green,
-        destination: const AddStaffForm(),
+        destination: const StaffUploadListScreen(),
       ),
       _MenuItem(
         icon: Icons.mic,
         title: 'Tambah Seiyu',
         color: Colors.orange,
-        destination: const AddSeiyuForm(),
+        destination: const SeiyuUploadListScreen(),
       ),
       _MenuItem(
         icon: Icons.person,

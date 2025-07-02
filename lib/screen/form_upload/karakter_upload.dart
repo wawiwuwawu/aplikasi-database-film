@@ -66,35 +66,35 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
     }
   }
 
-  Future<void> _searchKarakter() async {
-    if (_searchController.text.isEmpty) {
-      setState(() => _errorMessage = 'Masukkan nama karakter untuk mencari');
-      return;
-    }
+  // Future<void> _searchKarakter() async {
+  //   if (_searchController.text.isEmpty) {
+  //     setState(() => _errorMessage = 'Masukkan nama karakter untuk mencari');
+  //     return;
+  //   }
 
-    setState(() {
-      _isLoading = true;
-      _searchResults.clear();
-    });
+  //   setState(() {
+  //     _isLoading = true;
+  //     _searchResults.clear();
+  //   });
 
-    try {
-      final results = await _apiService.searchKarakterByName(
-        _searchController.text,
-      );
+  //   try {
+  //     final results = await _apiService.searchKarakterByName(
+  //       _searchController.text,
+  //     );
 
-      if (results.isEmpty) {
-        return;
-      }
+  //     if (results.isEmpty) {
+  //       return;
+  //     }
 
-      setState(() {
-        _searchResults.addAll(results);
-      });
-    } catch (e) {
-      return;
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
+  //     setState(() {
+  //       _searchResults.addAll(results);
+  //     });
+  //   } catch (e) {
+  //     return;
+  //   } finally {
+  //     setState(() => _isLoading = false);
+  //   }
+  // }
 
   void _selectKarakter(Karakter karakter) {
     setState(() {
@@ -263,72 +263,72 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
     }
   }
 
-  Widget _buildSearchField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  labelText: 'Cari Karakter (untuk edit)',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon:
-                      _searchController.text.isNotEmpty
-                          ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              setState(() {
-                                _searchController.clear();
-                                _searchResults.clear();
-                                _errorMessage = null;
-                              });
-                            },
-                          )
-                          : null,
-                ),
-                onChanged: (value) {
-                  if (_debounce?.isActive ?? false) _debounce!.cancel();
-                  setState(() {}); // Untuk update suffixIcon
-                  if (value.isEmpty) {
-                    setState(() {
-                      _searchResults.clear();
-                      _errorMessage = null;
-                    });
-                    return;
-                  }
-                  _debounce = Timer(const Duration(milliseconds: 1000), () {
-                    if (value.isNotEmpty) {
-                      _searchKarakter();
-                    }
-                  });
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _searchKarakter,
-              child:
-                  _isLoading
-                      ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                      : const Text('Cari'),
-            ),
-          ],
-        ),
-        _buildSearchResults(),
-      ],
-    );
-  }
+  // Widget _buildSearchField() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Row(
+  //         children: [
+  //           Expanded(
+  //             child: TextFormField(
+  //               controller: _searchController,
+  //               decoration: InputDecoration(
+  //                 labelText: 'Cari Karakter (untuk edit)',
+  //                 border: const OutlineInputBorder(),
+  //                 prefixIcon: const Icon(Icons.search),
+  //                 suffixIcon:
+  //                     _searchController.text.isNotEmpty
+  //                         ? IconButton(
+  //                           icon: const Icon(Icons.clear),
+  //                           onPressed: () {
+  //                             setState(() {
+  //                               _searchController.clear();
+  //                               _searchResults.clear();
+  //                               _errorMessage = null;
+  //                             });
+  //                           },
+  //                         )
+  //                         : null,
+  //               ),
+  //               onChanged: (value) {
+  //                 if (_debounce?.isActive ?? false) _debounce!.cancel();
+  //                 setState(() {}); // Untuk update suffixIcon
+  //                 if (value.isEmpty) {
+  //                   setState(() {
+  //                     _searchResults.clear();
+  //                     _errorMessage = null;
+  //                   });
+  //                   return;
+  //                 }
+  //                 _debounce = Timer(const Duration(milliseconds: 1000), () {
+  //                   if (value.isNotEmpty) {
+  //                     _searchKarakter();
+  //                   }
+  //                 });
+  //               },
+  //             ),
+  //           ),
+  //           const SizedBox(width: 8),
+  //           ElevatedButton(
+  //             onPressed: _isLoading ? null : _searchKarakter,
+  //             child:
+  //                 _isLoading
+  //                     ? const SizedBox(
+  //                       width: 20,
+  //                       height: 20,
+  //                       child: CircularProgressIndicator(
+  //                         strokeWidth: 2,
+  //                         color: Colors.white,
+  //                       ),
+  //                     )
+  //                     : const Text('Cari'),
+  //           ),
+  //         ],
+  //       ),
+  //       _buildSearchResults(),
+  //     ],
+  //   );
+  // }
 
   Widget _buildSearchResults() {
     // Jika sedang loading, tampilkan indikator loading.
@@ -569,7 +569,7 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
                   ),
                 ),
               if (_errorMessage != null) const SizedBox(height: 16),
-              _buildSearchField(),
+              // _buildSearchField(),
               _buildIdField(),
               _buildFormField(
                 label: 'Nama',

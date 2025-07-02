@@ -170,10 +170,13 @@ class StaffService {
     }
   }
 
-  Future<List<Staff>> searchStaffByName(String name) async {
-    final uri = Uri.parse(
-      '$_baseUrl/search',
-    ).replace(queryParameters: {'name': name});
+  Future<List<Staff>> searchStaffByName(String name, {int page = 1}) async {
+    final uri = Uri.parse('$_baseUrl/search').replace(
+      queryParameters: {
+        'name': name,
+        'page': page.toString(),
+      },
+    );
 
     final response = await http.get(
       uri,
@@ -203,6 +206,37 @@ class StaffService {
       _logger.i('Staff berhasil dihapus');
     } else {
       throw Exception('Gagal menghapus staff: ${response.statusCode}');
+    }
+  }
+
+  Future<List<Staff>> getAllStaff({int page = 1, String? query}) async {
+    final uri = Uri.parse('$_baseUrl').replace(
+      queryParameters: {
+        'page': page.toString(),
+        if (query != null && query.isNotEmpty) 'search': query,
+      },
+    );
+
+    final response = await http.get(
+      uri,
+      headers: {'Accept': 'application/json'},
+    );
+
+    print('StaffService.getAllSeiyu response: status=${response.statusCode}, body=${response.body}');
+    
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      if (jsonData['data'] is List) {
+        return (jsonData['data'] as List)
+            .map((staffJson) => Staff.fromJson(staffJson))
+            .toList();
+      } else {
+        print('StaffService.getAllStaff: data is not List');
+        return [];
+      }
+    } else {
+      print('StaffService.getAllStaff: Failed to load, status=${response.statusCode}');
+      throw Exception('Failed to load staff: ${response.statusCode} - ${response.body}');
     }
   }
 }

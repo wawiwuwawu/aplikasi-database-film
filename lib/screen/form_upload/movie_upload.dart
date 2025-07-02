@@ -11,13 +11,16 @@ import '../../service/staff_service.dart';
 import '../../model/staff_model.dart' as staff_model;
 import '../../model/movie_model.dart' as movie_model;
 import '../../service/movie_service.dart';
+import '../../model/movie_model.dart';
 
 class MovieFormPage extends StatefulWidget {
-  const MovieFormPage({super.key});
+  final Movie? movie;
+  const MovieFormPage({Key? key, this.movie}) : super(key: key);
 
   @override
   _MovieFormPageState createState() => _MovieFormPageState();
 }
+
 
 class _MovieFormPageState extends State<MovieFormPage>
     with WidgetsBindingObserver {
@@ -83,6 +86,7 @@ class _MovieFormPageState extends State<MovieFormPage>
   bool _isLoading = false;
   String? _errorMessage;
   bool _keyboardVisible = false;
+
 
   @override
   void initState() {
@@ -163,6 +167,11 @@ class _MovieFormPageState extends State<MovieFormPage>
       movie_model.ThemeMovie(id: 51, nama: 'Visual Arts'),
       movie_model.ThemeMovie(id: 52, nama: 'Workplace'),
     ];
+
+    if (widget.movie != null) {
+      // Panggil fungsi yang mengisi semua controller dan state
+      _selectMovie(widget.movie!);
+    }
   }
 
   @override
@@ -297,7 +306,7 @@ class _MovieFormPageState extends State<MovieFormPage>
                       ),
                     ),
                   if (_errorMessage != null) const SizedBox(height: 16),
-                  _buildSearchMovieField(),
+                  // _buildSearchMovieField(),
                   if (_selectedMovie != null) _buildIdField(),
                   const SizedBox(height: 12),
                   _buildTextField(
@@ -423,82 +432,82 @@ class _MovieFormPageState extends State<MovieFormPage>
     );
   }
 
-  Widget _buildSearchMovieField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _searchMovieController,
-                decoration: InputDecoration(
-                  labelText: 'Cari Movie (untuk edit)',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon:
-                      _searchMovieController.text.isNotEmpty
-                          ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              setState(() {
-                                _searchMovieController.clear();
-                                _searchMovieResults.clear();
-                                _errorMessage = null;
-                              });
-                            },
-                          )
-                          : null,
-                ),
-                onChanged: (value) {
-                  if (_debounceMovie?.isActive ?? false)
-                    _debounceMovie!.cancel();
-                  setState(() {}); // Untuk update suffixIcon
-                  if (value.isEmpty) {
-                    setState(() {
-                      _searchMovieResults.clear();
-                      _errorMessage = null;
-                    });
-                    return;
-                  }
-                  _debounceMovie = Timer(
-                    const Duration(milliseconds: 1000),
-                    () {
-                      if (value.isNotEmpty) {
-                        _searchMovie();
-                      }
-                    },
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed:
-                  _isSearchingMovie
-                      ? null
-                      : () {
-                        _searchMovie();
-                        FocusScope.of(context).unfocus();
-                      },
-              child:
-                  _isSearchingMovie
-                      ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                      : const Text('Cari'),
-            ),
-          ],
-        ),
-        _buildSearchMovieResults(),
-      ],
-    );
-  }
+  // Widget _buildSearchMovieField() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Row(
+  //         children: [
+  //           Expanded(
+  //             child: TextFormField(
+  //               controller: _searchMovieController,
+  //               decoration: InputDecoration(
+  //                 labelText: 'Cari Movie (untuk edit)',
+  //                 border: const OutlineInputBorder(),
+  //                 prefixIcon: const Icon(Icons.search),
+  //                 suffixIcon:
+  //                     _searchMovieController.text.isNotEmpty
+  //                         ? IconButton(
+  //                           icon: const Icon(Icons.clear),
+  //                           onPressed: () {
+  //                             setState(() {
+  //                               _searchMovieController.clear();
+  //                               _searchMovieResults.clear();
+  //                               _errorMessage = null;
+  //                             });
+  //                           },
+  //                         )
+  //                         : null,
+  //               ),
+  //               onChanged: (value) {
+  //                 if (_debounceMovie?.isActive ?? false)
+  //                   _debounceMovie!.cancel();
+  //                 setState(() {}); // Untuk update suffixIcon
+  //                 if (value.isEmpty) {
+  //                   setState(() {
+  //                     _searchMovieResults.clear();
+  //                     _errorMessage = null;
+  //                   });
+  //                   return;
+  //                 }
+  //                 _debounceMovie = Timer(
+  //                   const Duration(milliseconds: 1000),
+  //                   () {
+  //                     if (value.isNotEmpty) {
+  //                       _searchMovie();
+  //                     }
+  //                   },
+  //                 );
+  //               },
+  //             ),
+  //           ),
+  //           const SizedBox(width: 8),
+  //           ElevatedButton(
+  //             onPressed:
+  //                 _isSearchingMovie
+  //                     ? null
+  //                     : () {
+  //                       _searchMovie();
+  //                       FocusScope.of(context).unfocus();
+  //                     },
+  //             child:
+  //                 _isSearchingMovie
+  //                     ? const SizedBox(
+  //                       width: 20,
+  //                       height: 20,
+  //                       child: CircularProgressIndicator(
+  //                         strokeWidth: 2,
+  //                         color: Colors.white,
+  //                       ),
+  //                     )
+  //                     : const Text('Cari'),
+  //           ),
+  //         ],
+  //       ),
+  //       _buildSearchMovieResults(),
+  //     ],
+  //   );
+  // }
 
   Widget _buildSearchMovieResults() {
     // Tampilkan snackbar error hanya jika pencarian sudah selesai dan user tidak sedang mengetik
