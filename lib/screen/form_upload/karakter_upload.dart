@@ -5,8 +5,10 @@ import 'dart:async';
 import '../../service/karakter_service.dart';
 import '../../model/karakter_model.dart';
 
+
 class AddCharacterForm extends StatefulWidget {
-  const AddCharacterForm({super.key});
+  final Karakter? karakter;
+  const AddCharacterForm({Key? key, this.karakter}) : super(key: key);
 
   @override
   _AddCharacterFormState createState() => _AddCharacterFormState();
@@ -31,6 +33,19 @@ class _AddCharacterFormState extends State<AddCharacterForm> {
   final List<Karakter> _searchResults = [];
   Karakter? _selectedKarakter;
   Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.karakter != null) {
+      _selectedKarakter = widget.karakter;
+      _namaController.text = widget.karakter!.nama;
+      _bioController.text = widget.karakter!.bio ?? '';
+      if (widget.karakter!.profileUrl != null && widget.karakter!.profileUrl!.isNotEmpty) {
+        _coverImageUrl = widget.karakter!.profileUrl;
+      }
+    }
+  }
 
   @override
   void dispose() {

@@ -137,10 +137,11 @@ class KarakterService {
     }
   }
 
-  Future<List<Karakter>> searchKarakterByName(String name) async {
+  Future<List<Karakter>> searchKarakterByName(String name, {int page = 1}) async {
     final uri = Uri.parse('$_baseUrl/search').replace(
       queryParameters: {
         'name': name,
+        'page': page.toString(),
       },
     );
 
@@ -179,12 +180,19 @@ class KarakterService {
     }
   }
 
-  Future<List<Karakter>> getAllKarakter() async {
-    final uri = Uri.parse(_baseUrl);
+  Future<List<Karakter>> getAllKarakter({int page = 1, String? query}) async {
+    final uri = Uri.parse(_baseUrl).replace(
+      queryParameters: {
+        'page': page.toString(),
+        if (query != null && query.isNotEmpty) 'search': query,
+      },
+    );
+
     final response = await http.get(
       uri,
       headers: {'Accept': 'application/json'},
     );
+    print('KarakterService.getAllKarakter response: status=${response.statusCode}, body=${response.body}');
     if (response.statusCode == 200) {
       final jsonData = json.decode(response.body);
       if (jsonData['data'] is List) {
@@ -192,9 +200,11 @@ class KarakterService {
             .map((karakterJson) => Karakter.fromJson(karakterJson))
             .toList();
       } else {
-        throw Exception('Invalid API response structure');
+        print('KarakterService.getAllKarakter: data is not List');
+        return [];
       }
     } else {
+      print('KarakterService.getAllKarakter: Failed to load, status=${response.statusCode}');
       throw Exception('Failed to load karakter: ${response.statusCode} - ${response.body}');
     }
   }
