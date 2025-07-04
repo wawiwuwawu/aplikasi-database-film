@@ -2,13 +2,13 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
 import 'package:http_parser/http_parser.dart';
-import 'package:logger/logger.dart';
+import 'package:flutter/foundation.dart';
 
 import '../model/movie_model.dart';
 
 class MovieApiService {
   static const String _baseUrl = 'https://api.wawunime.my.id/api/movie';
-  final Logger _logger = Logger();
+  // final Logger _logger = Logger();
 
   Future<List<Movie>> getMovies({int page = 1, String? query}) async {
     final uri = Uri.parse(_baseUrl).replace(
@@ -142,7 +142,6 @@ class MovieApiService {
     final responseBody = await streamedResponse.stream.bytesToString();
 
     if (streamedResponse.statusCode < 200 || streamedResponse.statusCode >= 300) {
-      _logger.e('Upload failed: \\${streamedResponse.statusCode} - $responseBody');
       throw Exception('Upload failed: \\${streamedResponse.statusCode} - $responseBody');
     }
   }
@@ -203,7 +202,6 @@ class MovieApiService {
     final streamedResponse = await request.send();
     final responseBody = await streamedResponse.stream.bytesToString();
     if (streamedResponse.statusCode < 200 || streamedResponse.statusCode >= 300) {
-      _logger.e('Update failed: \\${streamedResponse.statusCode} - $responseBody');
       throw Exception('Update failed: \\${streamedResponse.statusCode} - $responseBody');
     }
   }

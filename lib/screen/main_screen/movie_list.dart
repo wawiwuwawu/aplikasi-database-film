@@ -9,6 +9,8 @@ import 'package:weebase/model/movie_model.dart';
 import 'package:weebase/screen/detail_screen/movie_detail.dart';
 import 'package:weebase/screen/upload_data.dart';
 import 'package:weebase/model/user_model.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class MovieListScreen extends StatefulWidget {
   const MovieListScreen({super.key});
@@ -31,6 +33,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   bool _serverOffline = false; // Tambahkan state
   bool _isSearching = false;
   bool _searchLoading = false;
+  bool _promoPopupShown = false;
   DateTime? _last429Time;
   final ScrollController _scrollController = ScrollController();
   int _currentPage = 1;
@@ -45,6 +48,140 @@ class _MovieListScreenState extends State<MovieListScreen> {
     _loadAllData();
     _searchController.addListener(_onSearchChanged);
     _scrollController.addListener(_onScroll);
+    _showWelcomeIfFirstTime();
+    _showPromoPopup();
+  }
+
+  final List<Map<String, String>> _promoImages = [
+    {
+      'image': 'https://instagram.fsrg5-3.fna.fbcdn.net/v/t51.2885-15/514195020_18130561000432321_4680913130634481334_n.webp?efg=eyJ2ZW5jb2RlX3RhZyI6IkNBUk9VU0VMX0lURU0uaW1hZ2VfdXJsZ2VuLjEwODB4MTM1MC5zZHIuZjgyNzg3LmRlZmF1bHRfaW1hZ2UifQ&_nc_ht=instagram.fsrg5-3.fna.fbcdn.net&_nc_cat=101&_nc_oc=Q6cZ2QFkYdvkLjndN5oWEzGKM1j1fRfJefVDpiYsUFnN0CTaiSZbwCojAmFiJbgE_yk2oWA&_nc_ohc=-kxvhvaZTjwQ7kNvwGyxWFf&_nc_gid=6F1qklRy7k32p1z0H6XQZg&edm=AP4sbd4BAAAA&ccb=7-5&ig_cache_key=MzY2NzcxNDU3OTk3NjQ0OTg0NQ%3D%3D.3-ccb7-5&oh=00_AfN70KgC7jj7RNzD3rEQaaLSnTyX0AsD4w3aO_Ns7Gc65A&oe=686D2991&_nc_sid=7a9f4b',
+      'link': 'https://www.instagram.com/wawunime/'
+    },
+    {
+      'image': 'https://web.wawunime.my.id/img/portfolio/2.jpg',
+      'link': 'https://web.wawunime.my.id/'
+    },
+    {
+      'image': 'https://web.wawunime.my.id/img/portfolio/1.webp',
+      'link': 'https://web.wawunime.my.id/'
+    },
+    {
+      'image': 'https://web.wawunime.my.id/img/app_image.png',
+      'link': 'https://web.wawunime.my.id/'
+    },
+    // Tambahkan gambar dan link lain di sini
+  ];
+
+  Future<void> _showPromoPopup() async {
+
+    if (_promoPopupShown) return;
+
+    setState(() {
+      _promoPopupShown = true; 
+    });
+
+    await Future.delayed(const Duration(milliseconds: 800)); // beri jeda agar tidak bentrok dengan welcome
+    if (!mounted) return;
+    final random = List<Map<String, String>>.from(_promoImages)..shuffle();
+    final promo = random.first;
+    final promoUrl = promo['image']!;
+    final promoLink = promo['link']!;
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GestureDetector(
+              onTap: () async {
+                final uri = Uri.parse(promoLink);
+                try {
+                  if (await canLaunchUrl(uri)) {
+                    final launched = await launchUrl(uri);
+                    if (!launched) {
+                      // fallback
+                      await launchUrlString(promoLink);
+                    }
+                  } else {
+                    await launchUrlString(promoLink);
+                  }
+                } catch (e) {
+                  // Optionally show error
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Tidak bisa membuka link.')),
+                    );
+                  }
+                }
+              },
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: AspectRatio(
+                  aspectRatio: 3 / 4,
+                  child: Image.network(
+                    promoUrl,
+                    width: 320,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) => progress == null
+                        ? child
+                        : const Center(child: CircularProgressIndicator()),
+                    errorBuilder: (context, error, stack) => const Center(child: Icon(Icons.broken_image, size: 48)),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  const Text(
+                    'Event Spesial!',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Kunjungi website kami untuk melihat event spesial dan menarik lainnya!',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Tutup'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showWelcomeIfFirstTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final shown = prefs.getBool('welcome_shown') ?? false;
+    if (!shown) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (context) => AlertDialog(
+            title: const Text('Selamat Datang!'),
+            content: const Text('Selamat datang di aplikasi database film. Selamat menjelajah!'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Tutup'),
+              ),
+            ],
+          ),
+        );
+      }
+      await prefs.setBool('welcome_shown', true);
+    }
   }
 
   Future<void> _loadAllData() async {
@@ -518,7 +655,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
                                   }
                                 } catch (e) {
                                   if (mounted) {
-                                    Navigator.pop(context); // tutup loading
+                                    Navigator.pop(context);
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(content: Text('Gagal memuat detail film.')),
                                     );
@@ -586,7 +723,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
         try {
           final detailMovie = await _apiService.getMovieDetail(movie.id);
           if (mounted) {
-            Navigator.pop(context); // tutup loading
+            Navigator.pop(context);
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -594,9 +731,10 @@ class _MovieListScreenState extends State<MovieListScreen> {
               ),
             );
           }
-        } catch (e) {
+        } catch (e, stack) {
+          debugPrint('Error saat memuat detail film: $e\n$stack');
           if (mounted) {
-            Navigator.pop(context); // tutup loading
+            Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Gagal memuat detail film.')),
             );
@@ -824,7 +962,6 @@ class SaveButtonState extends State<SaveButton> {
         ),
       );
     } catch (e) {
-      print('DEBUG error: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

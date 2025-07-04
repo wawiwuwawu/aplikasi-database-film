@@ -15,6 +15,9 @@ class Movie {
   final List<Staff> staffs;
   final List<Seiyu> seiyus;
   final List<Karakter> karakters;
+  final int savedCount;
+  final int watchingCount;
+  final int finishedCount;
 
   Movie({
     required this.id,
@@ -31,6 +34,9 @@ class Movie {
     required this.staffs,
     required this.seiyus,
     required this.karakters,
+    this.savedCount = 0,
+    this.watchingCount = 0,
+    this.finishedCount = 0,
   });
 
   Movie copyWith({
@@ -48,6 +54,9 @@ class Movie {
     List<Staff>? staffs,
     List<Seiyu>? seiyus,
     List<Karakter>? karakters,
+    int? savedCount,
+    int? watchingCount,
+    int? finishedCount,
   }) {
     return Movie(
       id: id ?? this.id,
@@ -64,6 +73,9 @@ class Movie {
       staffs: staffs ?? this.staffs,
       seiyus: seiyus ?? this.seiyus,
       karakters: karakters ?? this.karakters,
+      savedCount: savedCount ?? this.savedCount,
+      watchingCount: watchingCount ?? this.watchingCount,
+      finishedCount: finishedCount ?? this.finishedCount,
     );
   }
 
@@ -78,31 +90,24 @@ class Movie {
       durasi: json['durasi'] ?? 0,
       rating: json['rating'] ?? '',
       coverUrl: json['cover_url'] ?? '',
-      genres:
-          (json['genres'] as List<dynamic>?)
-              ?.map((e) => Genre.fromJson(e))
-              .toList() ??
-          [],
-      themes:
-          (json['themes'] as List<dynamic>?)
-              ?.map((e) => ThemeMovie.fromJson(e))
-              .toList() ??
-          [],
-      staffs:
-          (json['staffs'] as List<dynamic>?)
-              ?.map((e) => Staff.fromJson(e))
-              .toList() ??
-          [],
-      seiyus:
-          (json['seiyus'] as List<dynamic>?)
-              ?.map((e) => Seiyu.fromJson(e))
-              .toList() ??
-          [],
-      karakters:
-          (json['karakters'] as List<dynamic>?)
-              ?.map((e) => Karakter.fromJson(e))
-              .toList() ??
-          [],
+      genres: (json['genres'] is List)
+          ? (json['genres'] as List).map((e) => Genre.fromJson(e)).toList()
+          : [],
+      themes: (json['themes'] is List)
+          ? (json['themes'] as List).map((e) => ThemeMovie.fromJson(e)).toList()
+          : [],
+      staffs: (json['staffs'] is List)
+          ? (json['staffs'] as List).map((e) => Staff.fromJson(e)).toList()
+          : [],
+      seiyus: (json['seiyus'] is List)
+          ? (json['seiyus'] as List).map((e) => Seiyu.fromJson(e)).toList()
+          : [],
+      karakters: (json['karakters'] is List)
+          ? (json['karakters'] as List).map((e) => Karakter.fromJson(e)).toList()
+          : [],
+      savedCount: json['savedCount'] ?? 0,
+      watchingCount: json['watchingCount'] ?? 0,
+      finishedCount: json['finishedCount'] ?? 0,
     );
   }
 
@@ -122,6 +127,9 @@ class Movie {
       'staffs': staffs.map((s) => s.toJson()).toList(),
       'seiyus': seiyus.map((s) => s.toJson()).toList(),
       'karakters': karakters.map((k) => k.toJson()).toList(),
+      'saved_count': savedCount,
+      'watching_count': watchingCount,
+      'finished_count': finishedCount,
     };
   }
 
@@ -230,11 +238,12 @@ class Seiyu {
       id: json['id'],
       name: json['name'],
       profileUrl: json['profile_url'],
-      karakters:
-          (json['karakters'] as List)
-              .map((k) => SeiyuKarakter.fromJson(k))
-              .toList(),
-      seiyuMovie: SeiyuMovie.fromJson(json['SeiyuMovie']),
+      karakters: (json['karakters'] is List)
+          ? (json['karakters'] as List).map((k) => SeiyuKarakter.fromJson(k)).toList()
+          : [],
+      seiyuMovie: json['SeiyuMovie'] != null
+          ? SeiyuMovie.fromJson(json['SeiyuMovie'])
+          : SeiyuMovie(karakterId: 0),
     );
   }
 
